@@ -1,4 +1,3 @@
-
 datasource db {
   provider     = "mysql"
   url          = env("DATABASE_URL")
@@ -173,35 +172,22 @@ model SubAccount {
   Deployments      Deployment[]
   Databases        Database[]
   Integrations     Integration[]
+  CustomComponents CustomComponent[]
 
   @@index([agencyId])
 }
 
 model Deployment {
-  id              String           @id @default(uuid())
-  name            String
-  platform        String           @default("web") // web, mobile, desktop
-  status          DeploymentStatus @default(BUILDING)
-  deploymentUrl   String?
-  expoUrl         String?          // For React Native apps
-  codeStructure   String           @db.LongText
-  isResponsive    Boolean          @default(true)
-  hasAuth         Boolean          @default(false)
-  hasDatabase     Boolean          @default(false)
-  hasStripe       Boolean          @default(false)
-  hasAnalytics    Boolean          @default(false)
-  buildCommand    String?
-  startCommand    String?
-  envVariables    String?          @db.Text
-  subaccountId    String
-  funnelPageId    String?
-  customDomain    String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  SubAccount      SubAccount       @relation(fields: [subaccountId], references: [id], onDelete: Cascade)
-
-  @@index([subaccountId])
-  @@index([funnelPageId])
+  id               String      @id @default(uuid())
+  name             String
+  url              String?
+  status           String      @default("pending")
+  type             String      @default("website")
+  config           Json?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  subAccountId     String
+  subAccount       SubAccount  @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
 }
 
 model Database {
@@ -269,25 +255,21 @@ model MarketplaceItem {
 }
 
 model CustomComponent {
-  id           String        @id @default(uuid())
-  name         String
-  type         ComponentType
-  category     String
-  description  String?
-  code         String        @db.LongText
-  mobileCode   String?       @db.LongText // React Native code
-  props        String?       @db.LongText // JSON schema of props
-  styles       String?       @db.LongText
-  dependencies String?       @db.Text // JSON array of dependencies
-  preview      String?       @db.Text // Base64 or URL
-  isPublic     Boolean       @default(false)
-  downloads    Int           @default(0)
-  funnelId     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  Funnel       Funnel?       @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  id               String      @id @default(uuid())
+  name             String
+  type             String
+  content          Json
+  styles           Json
+  category         String      @default("custom")
+  code             String      @db.Text
+  isActive         Boolean     @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  subAccountId     String
+  subAccount       SubAccount  @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  createdBy        String
 
-  @@index([funnelId])
+  @@index([subAccountId])
   @@index([type])
   @@index([category])
 }

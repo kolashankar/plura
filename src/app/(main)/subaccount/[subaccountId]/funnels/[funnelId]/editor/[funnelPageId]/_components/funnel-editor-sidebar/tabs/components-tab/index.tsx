@@ -1,29 +1,75 @@
+'use client'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  AlertTriangle,
+  Database,
+  Gift,
+  Link2,
+  Plus,
+  SettingsIcon,
+  Square,
+  SquareCode,
+  SquareStack3D,
+  Youtube,
+  FileText,
+  Image,
+  Type,
+  Minus,
+  Star,
+  Grid3x3,
+  Container,
+  Layout,
+  Layers,
+  ChevronRight,
+  Code
+} from 'lucide-react'
+import React, { useState, useEffect } from 'react'
 import { EditorBtns } from '@/lib/constants'
-import React from 'react'
-import TextPlaceholder from './text-placeholder'
-import ContainerPlaceholder from './container-placeholder'
-import VideoPlaceholder from './video-placeholder'
-import TwoColumnsPlaceholder from './two-columns-placeholder'
-import LinkPlaceholder from './link-placeholder'
-import ContactFormComponentPlaceholder from './contact-form-placeholder'
-import CheckoutPlaceholder from './checkout-placeholder'
-import CodeGenerator from './code-generator' // Assuming CodeGenerator is in the same directory
+import { Button } from '@/components/ui/button'
+import { useEditor } from '@/providers/editor/editor-provider'
+import CodeGenerator from '@/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/code-generator'
+import ComponentRequestForm from '@/components/forms/component-request-form'
+import CustomModal from '@/components/global/custom-modal'
+import { toast } from '@/components/ui/use-toast'
 
 type Props = {}
 
-const ComponentsTab = (props: Props) => {
+const ComponentsTab = ({ subaccountId }: { subaccountId: string }) => {
+  const [loading, setLoading] = useState<boolean>(false)
+  const [customComponents, setCustomComponents] = useState<any[]>([])
+  const { editor } = useEditor()
+
+  useEffect(() => {
+    const fetchCustomComponents = async () => {
+      setLoading(true)
+      const components = await fetch(`/api/components/${subaccountId}`)
+      setCustomComponents(await components.json())
+      setLoading(false)
+    }
+    fetchCustomComponents()
+  }, [subaccountId, editor.components]) // Refetch when subaccountId or editor components change
+
   const elementCategories = {
     basic: [
       {
         id: 'text',
         name: 'Text',
         type: 'text',
+        Component: <Type size={20} />,
         content: [],
         styles: {},
       },
@@ -31,6 +77,7 @@ const ComponentsTab = (props: Props) => {
         id: 'heading',
         name: 'Heading',
         type: 'heading',
+        Component: <FileText size={20} />,
         content: [{ innerText: 'Heading' }],
         styles: { fontSize: '2rem', fontWeight: 'bold' },
       },
@@ -38,6 +85,7 @@ const ComponentsTab = (props: Props) => {
         id: 'paragraph',
         name: 'Paragraph',
         type: 'paragraph',
+        Component: <Type size={20} />,
         content: [{ innerText: 'Lorem ipsum dolor sit amet...' }],
         styles: { lineHeight: '1.6' },
       },
@@ -45,6 +93,7 @@ const ComponentsTab = (props: Props) => {
         id: 'button',
         name: 'Button',
         type: 'button',
+        Component: <Square size={20} />,
         content: [{ innerText: 'Click Me' }],
         styles: { padding: '12px 24px', backgroundColor: '#007adf', color: 'white', borderRadius: '6px' },
       },
@@ -52,6 +101,7 @@ const ComponentsTab = (props: Props) => {
         id: 'image',
         name: 'Image',
         type: 'image',
+        Component: <Image size={20} />,
         content: [{ src: '/placeholder.jpg', alt: 'Image' }],
         styles: { maxWidth: '100%', height: 'auto' },
       },
@@ -59,6 +109,7 @@ const ComponentsTab = (props: Props) => {
         id: 'video',
         name: 'Video',
         type: 'video',
+        Component: <Youtube size={20} />,
         content: [],
         styles: {},
       },
@@ -66,6 +117,7 @@ const ComponentsTab = (props: Props) => {
         id: 'link',
         name: 'Link',
         type: 'link',
+        Component: <Link2 size={20} />,
         content: [{ href: '#', innerText: 'Click Me' }],
         styles: { color: 'black', backgroundColor: 'transparent' },
       },
@@ -73,6 +125,7 @@ const ComponentsTab = (props: Props) => {
         id: 'divider',
         name: 'Divider',
         type: 'divider',
+        Component: <Minus size={20} />,
         content: [],
         styles: { height: '1px', backgroundColor: '#e5e5e5', margin: '20px 0' },
       },
@@ -80,6 +133,7 @@ const ComponentsTab = (props: Props) => {
         id: 'spacer',
         name: 'Spacer',
         type: 'spacer',
+        Component: <Layers size={20} />,
         content: [],
         styles: { height: '40px' },
       },
@@ -87,6 +141,7 @@ const ComponentsTab = (props: Props) => {
         id: 'icon',
         name: 'Icon',
         type: 'icon',
+        Component: <Star size={20} />,
         content: [{ iconName: 'star', size: 24 }],
         styles: { color: '#007adf' },
       },
@@ -96,6 +151,7 @@ const ComponentsTab = (props: Props) => {
         id: 'container',
         name: 'Container',
         type: 'container',
+        Component: <Container size={20} />,
         content: [],
         styles: {},
       },
@@ -103,6 +159,7 @@ const ComponentsTab = (props: Props) => {
         id: '2Col',
         name: '2 Columns',
         type: '2Col',
+        Component: <Grid3x3 size={20} />,
         content: [],
         styles: {},
       },
@@ -110,6 +167,7 @@ const ComponentsTab = (props: Props) => {
         id: '3Col',
         name: '3 Columns',
         type: '3Col',
+        Component: <Grid3x3 size={20} />,
         content: [],
         styles: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' },
       },
@@ -117,6 +175,7 @@ const ComponentsTab = (props: Props) => {
         id: '4Col',
         name: '4 Columns',
         type: '4Col',
+        Component: <Grid3x3 size={20} />,
         content: [],
         styles: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' },
       },
@@ -124,6 +183,7 @@ const ComponentsTab = (props: Props) => {
         id: 'section',
         name: 'Section',
         type: 'section',
+        Component: <Layout size={20} />,
         content: [],
         styles: { padding: '60px 0' },
       },
@@ -131,6 +191,7 @@ const ComponentsTab = (props: Props) => {
         id: 'hero',
         name: 'Hero Section',
         type: 'hero',
+        Component: <Layout size={20} />,
         content: [],
         styles: { minHeight: '80vh', display: 'flex', alignItems: 'center' },
       },
@@ -138,6 +199,7 @@ const ComponentsTab = (props: Props) => {
         id: 'grid',
         name: 'Grid Layout',
         type: 'grid',
+        Component: <Grid3x3 size={20} />,
         content: [],
         styles: { display: 'grid', gap: '20px' },
       },
@@ -145,6 +207,7 @@ const ComponentsTab = (props: Props) => {
         id: 'flexbox',
         name: 'Flex Container',
         type: 'flexbox',
+        Component: <Layout size={20} />,
         content: [],
         styles: { display: 'flex', gap: '20px' },
       },
@@ -152,6 +215,7 @@ const ComponentsTab = (props: Props) => {
         id: 'sidebar',
         name: 'Sidebar Layout',
         type: 'sidebar',
+        Component: <Layout size={20} />,
         content: [],
         styles: { display: 'grid', gridTemplateColumns: '250px 1fr', gap: '20px' },
       },
@@ -159,6 +223,7 @@ const ComponentsTab = (props: Props) => {
         id: 'card',
         name: 'Card',
         type: 'card',
+        Component: <SquareStack3D size={20} />,
         content: [],
         styles: { padding: '24px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
       },
@@ -168,6 +233,7 @@ const ComponentsTab = (props: Props) => {
         id: 'contactForm',
         name: 'Contact Form',
         type: 'contactForm',
+        Component: <MailIcon size={20} />,
         content: [],
         styles: {},
       },
@@ -175,6 +241,7 @@ const ComponentsTab = (props: Props) => {
         id: 'input',
         name: 'Input Field',
         type: 'input',
+        Component: <Square size={20} />,
         content: [{ placeholder: 'Enter text...', type: 'text' }],
         styles: { width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '4px' },
       },
@@ -182,6 +249,7 @@ const ComponentsTab = (props: Props) => {
         id: 'textarea',
         name: 'Textarea',
         type: 'textarea',
+        Component: <Square size={20} />,
         content: [{ placeholder: 'Enter your message...', rows: 4 }],
         styles: { width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '4px' },
       },
@@ -189,6 +257,7 @@ const ComponentsTab = (props: Props) => {
         id: 'select',
         name: 'Select Dropdown',
         type: 'select',
+        Component: <ChevronDown size={20} />,
         content: [{ options: ['Option 1', 'Option 2', 'Option 3'] }],
         styles: { width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '4px' },
       },
@@ -196,6 +265,7 @@ const ComponentsTab = (props: Props) => {
         id: 'checkbox',
         name: 'Checkbox',
         type: 'checkbox',
+        Component: <Square size={20} />,
         content: [{ label: 'I agree to terms', checked: false }],
         styles: {},
       },
@@ -203,6 +273,7 @@ const ComponentsTab = (props: Props) => {
         id: 'radio',
         name: 'Radio Button',
         type: 'radio',
+        Component: <Square size={20} />,
         content: [{ name: 'choice', options: ['Option A', 'Option B'] }],
         styles: {},
       },
@@ -210,6 +281,7 @@ const ComponentsTab = (props: Props) => {
         id: 'fileUpload',
         name: 'File Upload',
         type: 'fileUpload',
+        Component: <Upload size={20} />,
         content: [{ accept: 'image/*', multiple: false }],
         styles: { width: '100%', padding: '12px', border: '2px dashed #ddd', borderRadius: '4px' },
       },
@@ -217,6 +289,7 @@ const ComponentsTab = (props: Props) => {
         id: 'slider',
         name: 'Range Slider',
         type: 'slider',
+        Component: <SlidersHorizontal size={20} />,
         content: [{ min: 0, max: 100, value: 50 }],
         styles: { width: '100%' },
       },
@@ -224,6 +297,7 @@ const ComponentsTab = (props: Props) => {
         id: 'toggle',
         name: 'Toggle Switch',
         type: 'toggle',
+        Component: <Switch size={20} />,
         content: [{ checked: false, label: 'Enable feature' }],
         styles: {},
       },
@@ -231,6 +305,7 @@ const ComponentsTab = (props: Props) => {
         id: 'datePicker',
         name: 'Date Picker',
         type: 'datePicker',
+        Component: <Calendar size={20} />,
         content: [{ type: 'date' }],
         styles: { width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '4px' },
       },
@@ -240,6 +315,7 @@ const ComponentsTab = (props: Props) => {
         id: 'paymentForm',
         name: 'Payment Form',
         type: 'paymentForm',
+        Component: <CreditCard size={20} />,
         content: [],
         styles: {},
       },
@@ -247,6 +323,7 @@ const ComponentsTab = (props: Props) => {
         id: 'productCard',
         name: 'Product Card',
         type: 'productCard',
+        Component: <SquareStack3D size={20} />,
         content: [{ title: 'Product Name', price: '$99', image: '/product.jpg' }],
         styles: { border: '1px solid #ddd', borderRadius: '8px', padding: '16px' },
       },
@@ -254,6 +331,7 @@ const ComponentsTab = (props: Props) => {
         id: 'cart',
         name: 'Shopping Cart',
         type: 'cart',
+        Component: <ShoppingCart size={20} />,
         content: [],
         styles: {},
       },
@@ -261,6 +339,7 @@ const ComponentsTab = (props: Props) => {
         id: 'checkout',
         name: 'Checkout Form',
         type: 'checkout',
+        Component: <DollarSign size={20} />,
         content: [],
         styles: {},
       },
@@ -268,6 +347,7 @@ const ComponentsTab = (props: Props) => {
         id: 'pricingTable',
         name: 'Pricing Table',
         type: 'pricingTable',
+        Component: <DollarSign size={20} />,
         content: [{ plans: [{ name: 'Basic', price: '$9/mo' }, { name: 'Pro', price: '$19/mo' }] }],
         styles: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' },
       },
@@ -275,6 +355,7 @@ const ComponentsTab = (props: Props) => {
         id: 'productGallery',
         name: 'Product Gallery',
         type: 'productGallery',
+        Component: <Image size={20} />,
         content: [],
         styles: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' },
       },
@@ -282,6 +363,7 @@ const ComponentsTab = (props: Props) => {
         id: 'wishlist',
         name: 'Wishlist',
         type: 'wishlist',
+        Component: <Heart size={20} />,
         content: [],
         styles: {},
       },
@@ -289,6 +371,7 @@ const ComponentsTab = (props: Props) => {
         id: 'reviews',
         name: 'Product Reviews',
         type: 'reviews',
+        Component: <MessageCircle size={20} />,
         content: [],
         styles: {},
       },
@@ -296,6 +379,7 @@ const ComponentsTab = (props: Props) => {
         id: 'compare',
         name: 'Product Compare',
         type: 'compare',
+        Component: <GitCompareArrows size={20} />,
         content: [],
         styles: {},
       },
@@ -303,6 +387,7 @@ const ComponentsTab = (props: Props) => {
         id: 'inventory',
         name: 'Inventory Display',
         type: 'inventory',
+        Component: <Package size={20} />,
         content: [{ stock: 10, message: 'Only 10 left in stock!' }],
         styles: { color: '#d63384', fontWeight: 'bold' },
       },
@@ -312,6 +397,7 @@ const ComponentsTab = (props: Props) => {
         id: 'navbar',
         name: 'Navigation Bar',
         type: 'navbar',
+        Component: <Layout size={20} />,
         content: [{ logo: 'Logo', links: ['Home', 'About', 'Services', 'Contact'] }],
         styles: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' },
       },
@@ -319,6 +405,7 @@ const ComponentsTab = (props: Props) => {
         id: 'breadcrumbs',
         name: 'Breadcrumbs',
         type: 'breadcrumbs',
+        Component: <ChevronRight size={20} />,
         content: [{ path: ['Home', 'Products', 'Current Page'] }],
         styles: { fontSize: '14px', color: '#666' },
       },
@@ -326,6 +413,7 @@ const ComponentsTab = (props: Props) => {
         id: 'sidebar',
         name: 'Side Navigation',
         type: 'sideNav',
+        Component: <Layout size={20} />,
         content: [{ links: ['Dashboard', 'Profile', 'Settings', 'Help'] }],
         styles: { width: '250px', backgroundColor: '#f8f9fa', padding: '20px' },
       },
@@ -333,6 +421,7 @@ const ComponentsTab = (props: Props) => {
         id: 'tabs',
         name: 'Tab Navigation',
         type: 'tabs',
+        Component: <TabsList size={20} />,
         content: [{ tabs: ['Tab 1', 'Tab 2', 'Tab 3'] }],
         styles: { borderBottom: '1px solid #ddd' },
       },
@@ -340,6 +429,7 @@ const ComponentsTab = (props: Props) => {
         id: 'pagination',
         name: 'Pagination',
         type: 'pagination',
+        Component: <List size={20} />,
         content: [{ currentPage: 1, totalPages: 10 }],
         styles: { display: 'flex', gap: '8px', justifyContent: 'center' },
       },
@@ -347,6 +437,7 @@ const ComponentsTab = (props: Props) => {
         id: 'menu',
         name: 'Dropdown Menu',
         type: 'menu',
+        Component: <Menu size={20} />,
         content: [{ items: ['Option 1', 'Option 2', 'Option 3'] }],
         styles: { position: 'relative' },
       },
@@ -354,6 +445,7 @@ const ComponentsTab = (props: Props) => {
         id: 'footer',
         name: 'Footer',
         type: 'footer',
+        Component: <Layout size={20} />,
         content: [{ copyright: '© 2024 Company Name', links: ['Privacy', 'Terms', 'Support'] }],
         styles: { backgroundColor: '#333', color: 'white', padding: '40px 0' },
       },
@@ -361,6 +453,7 @@ const ComponentsTab = (props: Props) => {
         id: 'socialLinks',
         name: 'Social Media Links',
         type: 'socialLinks',
+        Component: <Share2 size={20} />,
         content: [{ platforms: ['facebook', 'twitter', 'instagram', 'linkedin'] }],
         styles: { display: 'flex', gap: '16px' },
       },
@@ -368,6 +461,7 @@ const ComponentsTab = (props: Props) => {
         id: 'backToTop',
         name: 'Back to Top',
         type: 'backToTop',
+        Component: <ArrowUp size={20} />,
         content: [],
         styles: { position: 'fixed', bottom: '20px', right: '20px' },
       },
@@ -375,6 +469,7 @@ const ComponentsTab = (props: Props) => {
         id: 'searchBar',
         name: 'Search Bar',
         type: 'searchBar',
+        Component: <Search size={20} />,
         content: [{ placeholder: 'Search...' }],
         styles: { display: 'flex', alignItems: 'center', gap: '8px' },
       },
@@ -384,6 +479,7 @@ const ComponentsTab = (props: Props) => {
         id: 'testimonial',
         name: 'Testimonial',
         type: 'testimonial',
+        Component: <MessageCircle size={20} />,
         content: [{ quote: 'Amazing service!', author: 'John Doe', role: 'CEO' }],
         styles: { fontStyle: 'italic', padding: '20px', backgroundColor: '#f8f9fa' },
       },
@@ -391,6 +487,7 @@ const ComponentsTab = (props: Props) => {
         id: 'faq',
         name: 'FAQ Section',
         type: 'faq',
+        Component: <HelpCircle size={20} />,
         content: [{ questions: [{ q: 'Question?', a: 'Answer here.' }] }],
         styles: {},
       },
@@ -398,6 +495,7 @@ const ComponentsTab = (props: Props) => {
         id: 'timeline',
         name: 'Timeline',
         type: 'timeline',
+        Component: <Clock size={20} />,
         content: [{ events: [{ date: '2024', title: 'Event', description: 'Description' }] }],
         styles: {},
       },
@@ -405,6 +503,7 @@ const ComponentsTab = (props: Props) => {
         id: 'stats',
         name: 'Statistics',
         type: 'stats',
+        Component: <BarChartHorizontal size={20} />,
         content: [{ stats: [{ value: '1000+', label: 'Customers' }] }],
         styles: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' },
       },
@@ -412,6 +511,7 @@ const ComponentsTab = (props: Props) => {
         id: 'team',
         name: 'Team Section',
         type: 'team',
+        Component: <Users size={20} />,
         content: [{ members: [{ name: 'John Doe', role: 'Developer', image: '/team1.jpg' }] }],
         styles: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' },
       },
@@ -419,6 +519,7 @@ const ComponentsTab = (props: Props) => {
         id: 'blog',
         name: 'Blog Posts',
         type: 'blog',
+        Component: <FileText size={20} />,
         content: [{ posts: [{ title: 'Post Title', excerpt: 'Post excerpt...', date: '2024-01-01' }] }],
         styles: {},
       },
@@ -426,6 +527,7 @@ const ComponentsTab = (props: Props) => {
         id: 'gallery',
         name: 'Image Gallery',
         type: 'gallery',
+        Component: <Image size={20} />,
         content: [{ images: ['/img1.jpg', '/img2.jpg', '/img3.jpg'] }],
         styles: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' },
       },
@@ -433,6 +535,7 @@ const ComponentsTab = (props: Props) => {
         id: 'counter',
         name: 'Animated Counter',
         type: 'counter',
+        Component: <Plus size={20} />,
         content: [{ target: 1000, suffix: '+', label: 'Happy Customers' }],
         styles: { textAlign: 'center', fontSize: '2rem', fontWeight: 'bold' },
       },
@@ -440,6 +543,7 @@ const ComponentsTab = (props: Props) => {
         id: 'newsletter',
         name: 'Newsletter Signup',
         type: 'newsletter',
+        Component: <MailPlus size={20} />,
         content: [{ title: 'Subscribe to our newsletter', placeholder: 'Enter your email' }],
         styles: { backgroundColor: '#f8f9fa', padding: '40px', textAlign: 'center' },
       },
@@ -447,6 +551,7 @@ const ComponentsTab = (props: Props) => {
         id: 'cta',
         name: 'Call to Action',
         type: 'cta',
+        Component: <Megaphone size={20} />,
         content: [{ title: 'Ready to get started?', buttonText: 'Get Started' }],
         styles: { textAlign: 'center', padding: '60px', backgroundColor: '#007adf', color: 'white' },
       },
@@ -456,6 +561,7 @@ const ComponentsTab = (props: Props) => {
         id: 'modal',
         name: 'Modal/Popup',
         type: 'modal',
+        Component: <Square size={20} />,
         content: [],
         styles: { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
       },
@@ -463,6 +569,7 @@ const ComponentsTab = (props: Props) => {
         id: 'tooltip',
         name: 'Tooltip',
         type: 'tooltip',
+        Component: <Square size={20} />,
         content: [{ text: 'Hover me', tooltip: 'This is a tooltip' }],
         styles: { position: 'relative' },
       },
@@ -470,6 +577,7 @@ const ComponentsTab = (props: Props) => {
         id: 'accordion',
         name: 'Accordion',
         type: 'accordion',
+        Component: <Square size={20} />,
         content: [{ items: [{ title: 'Section 1', content: 'Content here' }] }],
         styles: {},
       },
@@ -477,6 +585,7 @@ const ComponentsTab = (props: Props) => {
         id: 'carousel',
         name: 'Image Carousel',
         type: 'carousel',
+        Component: <Image size={20} />,
         content: [{ images: ['/slide1.jpg', '/slide2.jpg', '/slide3.jpg'] }],
         styles: { position: 'relative', overflow: 'hidden' },
       },
@@ -484,6 +593,7 @@ const ComponentsTab = (props: Props) => {
         id: 'progressBar',
         name: 'Progress Bar',
         type: 'progressBar',
+        Component: <Square size={20} />,
         content: [{ progress: 75, label: 'Progress' }],
         styles: { width: '100%', height: '8px', backgroundColor: '#e5e5e5', borderRadius: '4px' },
       },
@@ -491,6 +601,7 @@ const ComponentsTab = (props: Props) => {
         id: 'loadingSpinner',
         name: 'Loading Spinner',
         type: 'loadingSpinner',
+        Component: <Loader2 size={20} />,
         content: [],
         styles: { width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #007adf', borderRadius: '50%' },
       },
@@ -498,6 +609,7 @@ const ComponentsTab = (props: Props) => {
         id: 'notification',
         name: 'Notification',
         type: 'notification',
+        Component: <Bell size={20} />,
         content: [{ message: 'This is a notification', type: 'info' }],
         styles: { padding: '16px', borderRadius: '4px', backgroundColor: '#d1ecf1', color: '#0c5460' },
       },
@@ -505,6 +617,7 @@ const ComponentsTab = (props: Props) => {
         id: 'map',
         name: 'Map Embed',
         type: 'map',
+        Component: <Map size={20} />,
         content: [{ location: 'New York, NY', zoom: 12 }],
         styles: { width: '100%', height: '400px' },
       },
@@ -512,6 +625,7 @@ const ComponentsTab = (props: Props) => {
         id: 'chatWidget',
         name: 'Chat Widget',
         type: 'chatWidget',
+        Component: <MessageCircle size={20} />,
         content: [],
         styles: { position: 'fixed', bottom: '20px', right: '20px', width: '300px', height: '400px' },
       },
@@ -519,10 +633,31 @@ const ComponentsTab = (props: Props) => {
         id: 'codeBlock',
         name: 'Code Block',
         type: 'codeBlock',
+        Component: <SquareCode size={20} />,
         content: [{ code: 'console.log("Hello World");', language: 'javascript' }],
         styles: { backgroundColor: '#f8f8f8', padding: '16px', borderRadius: '4px', fontFamily: 'monospace' },
       },
     ]
+  }
+
+  const ComponentRequestModal = ({ subaccountId }: { subaccountId: string }) => {
+    return (
+      <CustomModal
+        title="Create New Component"
+        trigger={
+          <Button variant="ghost" className="w-full flex gap-2">
+            <Plus size={15} />
+            Create New Component
+          </Button>
+        }
+      >
+        <ComponentRequestForm
+          subaccountId={subaccountId}
+          editorComponents={editor.components}
+          setCustomComponents={setCustomComponents}
+        />
+      </CustomModal>
+    )
   }
 
   return (
@@ -541,6 +676,10 @@ const ComponentsTab = (props: Props) => {
             <div
               key={element.id}
               className="flex-col items-center justify-center flex"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('componentType', element.type)
+              }}
             >
               {element.Component}
               <span className="text-muted-foreground">{element.name}</span>
@@ -558,6 +697,10 @@ const ComponentsTab = (props: Props) => {
             <div
               key={element.id}
               className="flex-col items-center justify-center flex"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('componentType', element.type)
+              }}
             >
               {element.Component}
               <span className="text-muted-foreground">{element.name}</span>
@@ -575,6 +718,10 @@ const ComponentsTab = (props: Props) => {
             <div
               key={element.id}
               className="flex-col items-center justify-center flex"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('componentType', element.type)
+              }}
             >
               {element.Component}
               <span className="text-muted-foreground">{element.name}</span>
@@ -592,6 +739,10 @@ const ComponentsTab = (props: Props) => {
             <div
               key={element.id}
               className="flex-col items-center justify-center flex"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('componentType', element.type)
+              }}
             >
               {element.Component}
               <span className="text-muted-foreground">{element.name}</span>
@@ -609,6 +760,10 @@ const ComponentsTab = (props: Props) => {
             <div
               key={element.id}
               className="flex-col items-center justify-center flex"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('componentType', element.type)
+              }}
             >
               {element.Component}
               <span className="text-muted-foreground">{element.name}</span>
@@ -626,6 +781,10 @@ const ComponentsTab = (props: Props) => {
             <div
               key={element.id}
               className="flex-col items-center justify-center flex"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('componentType', element.type)
+              }}
             >
               {element.Component}
               <span className="text-muted-foreground">{element.name}</span>
@@ -643,6 +802,10 @@ const ComponentsTab = (props: Props) => {
             <div
               key={element.id}
               className="flex-col items-center justify-center flex"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('componentType', element.type)
+              }}
             >
               {element.Component}
               <span className="text-muted-foreground">{element.name}</span>
@@ -651,10 +814,47 @@ const ComponentsTab = (props: Props) => {
         </AccordionContent>
       </AccordionItem>
 
-      <div className="p-4 border-t">
-        <CodeGenerator />
-      </div>
+      <AccordionItem value="custom" className="px-6 py-0 ">
+        <AccordionTrigger className="!no-underline">
+          Custom Components
+        </AccordionTrigger>
+        <AccordionContent className="flex flex-wrap gap-2">
+          {loading ? (
+            <div className="text-center py-4">Loading custom components...</div>
+          ) : customComponents.length > 0 ? (
+            customComponents.map((component) => (
+              <div
+                key={component.id}
+                draggable
+                onDragStart={(e) => {
+                  if (component.type === null) return
+                  e.dataTransfer.setData('componentType', component.type)
+                  e.dataTransfer.setData('customComponent', JSON.stringify(component))
+                }}
+                className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center cursor-grab border-2 border-dashed border-muted-foreground/50 hover:border-muted-foreground group"
+                title={component.name}
+              >
+                <div className="flex flex-col items-center">
+                  <SquareCode size={20} className="text-muted-foreground group-hover:text-foreground" />
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground truncate max-w-12">
+                    {component.name}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              No custom components yet. Create one using the button below.
+            </div>
+          )}
+        </AccordionContent>
+      </AccordionItem>
     </Accordion>
+
+    <div className="p-4 border-t space-y-4">
+      <ComponentRequestModal subaccountId={subaccountId} />
+      <CodeGenerator />
+    </div>
   )
 }
 
