@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { rmSync } from 'fs'
@@ -21,11 +22,9 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      deployment
-    })
+    return NextResponse.json(deployment)
   } catch (error) {
+    console.error('Failed to fetch deployment:', error)
     return NextResponse.json(
       { error: 'Failed to fetch deployment' },
       { status: 500 }
@@ -49,12 +48,12 @@ export async function DELETE(
       )
     }
 
-    // Delete deployment files
+    // Clean up deployment files
     try {
-      const deploymentPath = join(process.cwd(), 'deployments', params.deploymentId)
+      const deploymentPath = join(process.cwd(), 'temp', params.deploymentId)
       rmSync(deploymentPath, { recursive: true, force: true })
-    } catch (fileError) {
-      console.warn('Failed to delete deployment files:', fileError)
+    } catch (error) {
+      console.error('Failed to clean up deployment files:', error)
     }
 
     // Delete from database
@@ -75,27 +74,26 @@ export async function DELETE(
   }
 }
 
-export async function PATCH(
+export async function PUT(
   req: NextRequest,
   { params }: { params: { deploymentId: string } }
 ) {
   try {
-    const { status, deploymentUrl } = await req.json()
-
+    const { name, status, deploymentUrl } = await req.json()
+    
     const deployment = await prisma.deployment.update({
       where: { id: params.deploymentId },
       data: {
+        name,
         status,
         deploymentUrl,
         updatedAt: new Date()
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      deployment
-    })
+    return NextResponse.json(deployment)
   } catch (error) {
+    console.error('Failed to update deployment:', error)
     return NextResponse.json(
       { error: 'Failed to update deployment' },
       { status: 500 }

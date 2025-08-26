@@ -1,3 +1,4 @@
+
 datasource db {
   provider     = "mysql"
   url          = env("DATABASE_URL")
@@ -13,6 +14,44 @@ enum Role {
   AGENCY_ADMIN
   SUBACCOUNT_USER
   SUBACCOUNT_GUEST
+}
+
+enum Plan {
+  STARTER
+  BASIC
+  UNLIMITED
+  ENTERPRISE
+}
+
+enum DeploymentStatus {
+  BUILDING
+  DEPLOYED
+  FAILED
+  DELETED
+}
+
+enum ComponentType {
+  TEXT
+  BUTTON
+  IMAGE
+  VIDEO
+  FORM
+  NAVBAR
+  FOOTER
+  HERO
+  TESTIMONIAL
+  PRICING
+  CTA
+  GALLERY
+  BLOG
+  ECOMMERCE
+  STRIPE
+  AUTH
+  SOCIAL
+  MAP
+  CHAT
+  ANALYTICS
+  CUSTOM
 }
 
 enum Icon {
@@ -56,6 +95,7 @@ model User {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   role         Role           @default(SUBACCOUNT_USER)
+  plan         Plan           @default(STARTER)
   agencyId     String?
   Agency       Agency?        @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   Permissions  Permissions[]
@@ -130,8 +170,143 @@ model SubAccount {
   Pipeline         Pipeline[]
   Tags             Tag[]
   Notification     Notification[]
+  Deployments      Deployment[]
+  Databases        Database[]
+  Integrations     Integration[]
 
   @@index([agencyId])
+}
+
+model Deployment {
+  id              String           @id @default(uuid())
+  name            String
+  platform        String           @default("web") // web, mobile, desktop
+  status          DeploymentStatus @default(BUILDING)
+  deploymentUrl   String?
+  expoUrl         String?          // For React Native apps
+  codeStructure   String           @db.LongText
+  isResponsive    Boolean          @default(true)
+  hasAuth         Boolean          @default(false)
+  hasDatabase     Boolean          @default(false)
+  hasStripe       Boolean          @default(false)
+  hasAnalytics    Boolean          @default(false)
+  buildCommand    String?
+  startCommand    String?
+  envVariables    String?          @db.Text
+  subaccountId    String
+  funnelPageId    String?
+  customDomain    String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  SubAccount      SubAccount       @relation(fields: [subaccountId], references: [id], onDelete: Cascade)
+
+  @@index([subaccountId])
+  @@index([funnelPageId])
+}
+
+model Database {
+  id           String     @id @default(uuid())
+  name         String
+  provider     String     // postgresql, mysql, mongodb, supabase
+  connectionString String? @db.Text
+  host         String?
+  port         Int?
+  database     String?
+  username     String?
+  password     String?
+  isActive     Boolean    @default(false)
+  isDefault    Boolean    @default(false)
+  tables       String?    @db.LongText // JSON structure of tables
+  subaccountId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  SubAccount   SubAccount @relation(fields: [subaccountId], references: [id], onDelete: Cascade)
+
+  @@index([subaccountId])
+}
+
+model Integration {
+  id           String     @id @default(uuid())
+  name         String
+  provider     String     // stripe, google, facebook, shopify, etc.
+  apiKey       String?    @db.Text
+  apiSecret    String?    @db.Text
+  webhookUrl   String?
+  isActive     Boolean    @default(false)
+  config       String?    @db.LongText // JSON config
+  subaccountId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  SubAccount   SubAccount @relation(fields: [subaccountId], references: [id], onDelete: Cascade)
+
+  @@index([subaccountId])
+}
+
+model MarketplaceItem {
+  id           String   @id @default(uuid())
+  name         String
+  description  String   @db.Text
+  type         String   // theme, plugin, template
+  category     String
+  price        Decimal  @default(0)
+  isFree       Boolean  @default(true)
+  previewUrl   String?
+  downloadUrl  String?
+  thumbnails   String?  @db.Text // JSON array of image URLs
+  features     String?  @db.Text // JSON array of features
+  tags         String?  @db.Text // JSON array of tags
+  downloads    Int      @default(0)
+  rating       Float    @default(0)
+  reviews      Int      @default(0)
+  sellerId     String
+  isApproved   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([sellerId])
+  @@index([type])
+  @@index([category])
+}
+
+model CustomComponent {
+  id           String        @id @default(uuid())
+  name         String
+  type         ComponentType
+  category     String
+  description  String?
+  code         String        @db.LongText
+  mobileCode   String?       @db.LongText // React Native code
+  props        String?       @db.LongText // JSON schema of props
+  styles       String?       @db.LongText
+  dependencies String?       @db.Text // JSON array of dependencies
+  preview      String?       @db.Text // Base64 or URL
+  isPublic     Boolean       @default(false)
+  downloads    Int           @default(0)
+  funnelId     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  Funnel       Funnel?       @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  @@index([funnelId])
+  @@index([type])
+  @@index([category])
+}
+
+model AITemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String   @db.Text
+  prompt      String   @db.LongText
+  category    String   // ecommerce, blog, landing, dashboard, etc.
+  structure   String   @db.LongText // JSON structure
+  components  String   @db.LongText // JSON array of required components
+  features    String   @db.Text // JSON array of features
+  isActive    Boolean  @default(true)
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
 }
 
 model Tag {
@@ -287,19 +462,20 @@ model Media {
 }
 
 model Funnel {
-  id            String       @id @default(uuid())
-  name          String
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  description   String?
-  published     Boolean      @default(false)
-  subDomainName String?      @unique
-  favicon       String?      @db.Text
-  subAccountId  String
-  SubAccount    SubAccount   @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
-  FunnelPages   FunnelPage[]
-  liveProducts  String?      @default("[]")
-  ClassName     ClassName[]
+  id               String            @id @default(uuid())
+  name             String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  description      String?
+  published        Boolean           @default(false)
+  subDomainName    String?           @unique
+  favicon          String?           @db.Text
+  subAccountId     String
+  SubAccount       SubAccount        @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  FunnelPages      FunnelPage[]
+  liveProducts     String?           @default("[]")
+  ClassName        ClassName[]
+  CustomComponents CustomComponent[]
 
   @@index([subAccountId])
 }
@@ -393,11 +569,6 @@ model Notification {
   @@index([agencyId])
   @@index([subAccountId])
   @@index([userId])
-}
-
-enum Plan {
-  price_1OYxkqFj9oKEERu1NbKUxXxN
-  price_1OYxkqFj9oKEERu1KfJGWxgN
 }
 
 model Subscription {
