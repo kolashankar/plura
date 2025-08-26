@@ -1,449 +1,385 @@
 
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
-import { Code, Download, Copy, FolderTree, Lock } from 'lucide-react'
+import { Code, Download, Eye, Smartphone, Monitor, Globe } from 'lucide-react'
 import { toast } from 'sonner'
-import JSZip from 'jszip'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { useEditor } from '@/providers/editor/editor-provider'
 
 interface CodeGeneratorProps {
-  pageData?: any
-  userPlan?: string
+  elements: any[]
+  styles: any
+  funnelPageId: string
+  subaccountId: string
 }
 
-export default function CodeGenerator({ pageData, userPlan = 'free' }: CodeGeneratorProps) {
+const CodeGenerator: React.FC<CodeGeneratorProps> = ({ 
+  elements, 
+  styles, 
+  funnelPageId, 
+  subaccountId 
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
   const [generatedCode, setGeneratedCode] = useState<any>(null)
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [platform, setPlatform] = useState<'web' | 'mobile'>('web')
+  const [isMobileResponsive, setIsMobileResponsive] = useState(true)
+  const [deploymentUrl, setDeploymentUrl] = useState<string>('')
+  const { state } = useEditor()
 
-  const generateAdvancedCode = async () => {
-    setIsGenerating(true)
-    
-    // Simulate advanced code generation based on components
-    setTimeout(() => {
-      const hasStripe = pageData?.components?.some((comp: any) => comp.type === 'stripe')
-      const hasAuth = pageData?.components?.some((comp: any) => comp.type === 'auth')
-      const hasDatabase = pageData?.components?.some((comp: any) => comp.type === 'database')
+  const generateCode = async () => {
+    setLoading(true)
+    try {
+      const hasStripe = elements.some(el => el.type === 'stripe' || el.type === 'payment')
+      const hasAuth = elements.some(el => el.type === 'login' || el.type === 'signup')
+      const hasDatabase = elements.some(el => el.type === 'form' || el.type === 'contactForm')
+      const hasCharts = elements.some(el => el.type === 'chart')
       
-      const code = {
-        structure: {
-          'src/': {
-            'components/': {
-              'ui/': {
-                'button.tsx': generateButtonComponent(),
-                'card.tsx': generateCardComponent(),
-                'input.tsx': generateInputComponent(),
-                'form.tsx': generateFormComponent()
-              },
-              'layout/': {
-                'header.tsx': generateHeaderComponent(),
-                'footer.tsx': generateFooterComponent(),
-                'sidebar.tsx': generateSidebarComponent()
-              },
-              'sections/': {
-                'hero.tsx': generateHeroSection(),
-                'features.tsx': generateFeaturesSection(),
-                'testimonials.tsx': generateTestimonialsSection(),
-                ...(hasStripe && { 'payment.tsx': generateStripeComponent() }),
-                ...(hasAuth && { 'auth.tsx': generateAuthComponent() })
-              }
-            },
-            'pages/': {
-              'index.tsx': generateMainPage(),
-              '_app.tsx': generateAppWrapper(),
-              '_document.tsx': generateDocumentStructure(),
-              ...(hasStripe && { 'checkout.tsx': generateCheckoutPage() }),
-              ...(hasAuth && { 'login.tsx': generateLoginPage(), 'register.tsx': generateRegisterPage() })
-            },
-            'styles/': {
-              'globals.css': generateGlobalStyles(),
-              'components.css': generateComponentStyles()
-            },
-            'lib/': {
-              'utils.ts': generateUtilityFunctions(),
-              'constants.ts': generateConstants(),
-              ...(hasStripe && { 'stripe.ts': generateStripeConfig() }),
-              ...(hasDatabase && { 'database.ts': generateDatabaseConfig() })
-            },
-            'hooks/': {
-              'useLocalStorage.ts': generateLocalStorageHook(),
-              'useDebounce.ts': generateDebounceHook(),
-              ...(hasAuth && { 'useAuth.ts': generateAuthHook() }),
-              ...(hasDatabase && { 'useDatabase.ts': generateDatabaseHook() })
-            },
-            ...(hasStripe && {
-              'api/': {
-                'stripe/': {
-                  'checkout.ts': generateStripeCheckoutAPI(),
-                  'webhook.ts': generateStripeWebhookAPI(),
-                  'customer.ts': generateStripeCustomerAPI()
-                }
-              }
-            }),
-            ...(hasAuth && {
-              'api/': {
-                'auth/': {
-                  'login.ts': generateAuthLoginAPI(),
-                  'register.ts': generateAuthRegisterAPI(),
-                  'middleware.ts': generateAuthMiddleware()
-                }
-              }
-            }),
-            ...(hasDatabase && {
-              'api/': {
-                'database/': {
-                  'connection.ts': generateDatabaseConnection(),
-                  'models.ts': generateDatabaseModels(),
-                  'queries.ts': generateDatabaseQueries()
-                }
-              }
-            })
-          },
-          'package.json': generatePackageJson(hasStripe, hasAuth, hasDatabase),
-          'next.config.js': generateNextConfig(),
-          'tailwind.config.js': generateTailwindConfig(),
-          'tsconfig.json': generateTSConfig(),
-          '.env.example': generateEnvExample(hasStripe, hasAuth, hasDatabase),
-          'README.md': generateReadme(),
-          ...(hasDatabase && { 'prisma/': { 'schema.prisma': generatePrismaSchema() } })
-        }
-      }
+      const codeStructure = platform === 'web' 
+        ? generateWebCode(elements, styles, hasStripe, hasAuth, hasDatabase, hasCharts, isMobileResponsive)
+        : generateMobileCode(elements, styles, hasStripe, hasAuth, hasDatabase)
+
+      setGeneratedCode(codeStructure)
       
-      setGeneratedCode(code)
-      setIsGenerating(false)
-      toast.success('Advanced code generated successfully!')
-    }, 3000)
+      // Auto-deploy if enabled
+      await deployProject(codeStructure)
+      
+    } catch (error) {
+      console.error('Code generation failed:', error)
+      toast.error('Failed to generate code')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const downloadProject = async () => {
-    if (!generatedCode || userPlan === 'free') {
-      toast.error('Download is available for Enterprise plan only')
-      return
-    }
-
-    const zip = new JSZip()
-    
-    const addFilesToZip = (structure: any, folder: JSZip) => {
-      Object.entries(structure).forEach(([name, content]) => {
-        if (typeof content === 'string') {
-          folder.file(name, content)
-        } else {
-          const subFolder = folder.folder(name)
-          if (subFolder) {
-            addFilesToZip(content, subFolder)
-          }
-        }
+  const deployProject = async (codeStructure: any) => {
+    try {
+      const response = await fetch('/api/deploy/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codeStructure,
+          platform,
+          funnelPageId,
+          subaccountId,
+          isMobileResponsive
+        })
       })
+      
+      const result = await response.json()
+      if (result.deploymentUrl) {
+        setDeploymentUrl(result.deploymentUrl)
+        toast.success('Project deployed successfully!')
+      }
+    } catch (error) {
+      console.error('Deployment failed:', error)
+      toast.error('Deployment failed')
     }
+  }
 
-    addFilesToZip(generatedCode.structure, zip)
+  const downloadCode = () => {
+    if (!generatedCode) return
     
-    const blob = await zip.generateAsync({ type: 'blob' })
+    const blob = new Blob([JSON.stringify(generatedCode, null, 2)], { 
+      type: 'application/json' 
+    })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'generated-website.zip'
+    a.download = `${platform}-project-${funnelPageId}.zip`
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    
-    toast.success('Project downloaded successfully!')
-  }
-
-  const copyToClipboard = (content: string) => {
-    navigator.clipboard.writeText(content)
-    toast.success('Code copied to clipboard!')
-  }
-
-  const renderFileTree = (structure: any, level = 0) => {
-    return Object.entries(structure).map(([name, content]) => (
-      <div key={name} style={{ marginLeft: level * 20 }}>
-        <div className="flex items-center gap-2 py-1">
-          {typeof content === 'string' ? (
-            <span className="text-blue-600">📄 {name}</span>
-          ) : (
-            <span className="text-yellow-600">📁 {name}</span>
-          )}
-        </div>
-        {typeof content === 'object' && renderFileTree(content, level + 1)}
-      </div>
-    ))
   }
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="flex items-center gap-2"
+        >
           <Code className="w-4 h-4" />
           Generate Code
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl h-[80vh]">
+      <DialogContent className="max-w-6xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Advanced Website Code Generator</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Code className="w-5 h-5" />
+            Code Generator & Deployment
+          </DialogTitle>
         </DialogHeader>
-
-        <div className="flex gap-4 h-full">
-          <div className="w-1/3">
-            <div className="text-center mb-4">
-              <Button 
-                onClick={generateAdvancedCode} 
-                disabled={isGenerating}
-                className="w-full"
-              >
-                {isGenerating ? 'Generating Advanced Code...' : 'Generate Full Project'}
-              </Button>
+        
+        <div className="space-y-4">
+          {/* Platform Selection */}
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-2">
+              <Label>Platform Type</Label>
+              <Select value={platform} onValueChange={(value: 'web' | 'mobile') => setPlatform(value)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="web">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="w-4 h-4" />
+                      Web Application
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="mobile">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4" />
+                      Mobile App (React Native)
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-
-            {generatedCode && (
-              <div>
-                <h3 className="font-semibold mb-2">Project Structure</h3>
-                <ScrollArea className="h-96 border rounded-lg p-4">
-                  {renderFileTree(generatedCode.structure)}
-                </ScrollArea>
-                
-                <div className="flex gap-2 mt-4">
-                  <Button 
-                    onClick={downloadProject} 
-                    className="flex-1 gap-2"
-                    disabled={userPlan === 'free'}
-                  >
-                    {userPlan === 'free' ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />}
-                    {userPlan === 'free' ? 'Enterprise Only' : 'Download ZIP'}
-                  </Button>
-                </div>
-                
-                {userPlan === 'free' && (
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Upgrade to Enterprise to download complete project
-                  </p>
-                )}
+            
+            {platform === 'web' && (
+              <div className="flex items-center gap-2">
+                <Switch 
+                  checked={isMobileResponsive} 
+                  onCheckedChange={setIsMobileResponsive}
+                  id="mobile-responsive"
+                />
+                <Label htmlFor="mobile-responsive">Mobile Responsive</Label>
               </div>
             )}
           </div>
 
-          <div className="w-2/3">
-            {generatedCode && (
-              <Tabs defaultValue="components" className="h-full">
-                <TabsList className="grid w-full grid-cols-5">
-                  <TabsTrigger value="components">Components</TabsTrigger>
-                  <TabsTrigger value="pages">Pages</TabsTrigger>
-                  <TabsTrigger value="api">API</TabsTrigger>
-                  <TabsTrigger value="config">Config</TabsTrigger>
-                  <TabsTrigger value="preview">Preview</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="components" className="h-96">
-                  <ScrollArea className="h-full">
-                    <div className="space-y-4">
-                      {Object.entries(generatedCode.structure['src/']['components/']).map(([folder, files]: [string, any]) => (
-                        <div key={folder} className="border rounded-lg p-4">
-                          <h4 className="font-semibold mb-2">{folder}</h4>
-                          {Object.entries(files).map(([file, content]: [string, any]) => (
-                            <div key={file} className="mb-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium">{file}</span>
-                                <Button size="sm" variant="ghost" onClick={() => copyToClipboard(content)}>
-                                  <Copy className="w-3 h-3" />
-                                </Button>
-                              </div>
-                              <pre className="bg-muted p-2 rounded text-xs overflow-x-auto max-h-32">
-                                {content.substring(0, 200)}...
-                              </pre>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-
-                <TabsContent value="api" className="h-96">
-                  <ScrollArea className="h-full">
-                    <div className="space-y-4">
-                      {generatedCode.structure['src/']['api/'] && Object.entries(generatedCode.structure['src/']['api/']).map(([folder, files]: [string, any]) => (
-                        <div key={folder} className="border rounded-lg p-4">
-                          <h4 className="font-semibold mb-2 flex items-center gap-2">
-                            <Badge variant="secondary">{folder}</Badge>
-                          </h4>
-                          {Object.entries(files).map(([file, content]: [string, any]) => (
-                            <div key={file} className="mb-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium">{file}</span>
-                                <Button size="sm" variant="ghost" onClick={() => copyToClipboard(content)}>
-                                  <Copy className="w-3 h-3" />
-                                </Button>
-                              </div>
-                              <pre className="bg-muted p-2 rounded text-xs overflow-x-auto max-h-32">
-                                {content.substring(0, 200)}...
-                              </pre>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-
-                <TabsContent value="preview" className="h-96">
-                  <ScrollArea className="h-full border rounded-lg p-4">
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Generated Website Preview</h3>
-                      <div className="bg-muted p-4 rounded-lg">
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Your website has been converted to a complete Next.js project with:
-                        </p>
-                        <ul className="list-disc list-inside space-y-1 text-sm">
-                          <li>✅ Responsive React components with exact styling</li>
-                          <li>✅ TypeScript support with full type safety</li>
-                          <li>✅ Tailwind CSS styling matching your design</li>
-                          <li>✅ SEO optimized structure</li>
-                          <li>✅ Production-ready configuration</li>
-                          {pageData?.components?.some((c: any) => c.type === 'stripe') && (
-                            <li>💳 Complete Stripe integration (frontend + backend)</li>
-                          )}
-                          {pageData?.components?.some((c: any) => c.type === 'auth') && (
-                            <li>🔐 Authentication system with JWT</li>
-                          )}
-                          {pageData?.components?.some((c: any) => c.type === 'database') && (
-                            <li>🗄️ Database integration with Prisma ORM</li>
-                          )}
-                        </ul>
-                      </div>
-                      
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-blue-800 mb-2">Deployment Ready</h4>
-                        <p className="text-sm text-blue-700">
-                          This code is ready to deploy on Vercel, Netlify, or any Node.js hosting platform.
-                          All environment variables and configurations are included.
-                        </p>
-                      </div>
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-              </Tabs>
+          {/* Generate Button */}
+          <div className="flex gap-2">
+            <Button 
+              onClick={generateCode} 
+              disabled={loading}
+              className="flex-1"
+            >
+              {loading ? 'Generating...' : `Generate ${platform === 'web' ? 'React' : 'React Native'} Code`}
+            </Button>
+            
+            {deploymentUrl && (
+              <Button 
+                variant="outline"
+                onClick={() => window.open(deploymentUrl, '_blank')}
+                className="flex items-center gap-2"
+              >
+                <Globe className="w-4 h-4" />
+                View Live
+              </Button>
             )}
           </div>
+
+          {/* Generated Code Display */}
+          {generatedCode && (
+            <Tabs defaultValue="preview" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="structure">File Structure</TabsTrigger>
+                <TabsTrigger value="code">Source Code</TabsTrigger>
+                <TabsTrigger value="deploy">Deploy & Share</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="preview" className="space-y-4">
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Project Preview</h3>
+                  <div className="space-y-2">
+                    <Badge variant="secondary">
+                      {platform === 'web' ? 'React + Next.js' : 'React Native + Expo'}
+                    </Badge>
+                    {platform === 'web' && isMobileResponsive && (
+                      <Badge variant="outline">Mobile Responsive</Badge>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Generated {Object.keys(generatedCode.files).length} files
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="structure" className="space-y-4">
+                <ScrollArea className="h-96 w-full border rounded-lg p-4">
+                  <div className="space-y-2">
+                    {Object.keys(generatedCode.files).map((filePath) => (
+                      <div key={filePath} className="text-sm font-mono">
+                        📄 {filePath}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="code" className="space-y-4">
+                <ScrollArea className="h-96 w-full border rounded-lg">
+                  <pre className="p-4 text-xs">
+                    <code>{JSON.stringify(generatedCode, null, 2)}</code>
+                  </pre>
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="deploy" className="space-y-4">
+                <div className="grid gap-4">
+                  {deploymentUrl && (
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-semibold mb-2">Live Deployment</h3>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 p-2 bg-muted rounded text-sm">
+                          {deploymentUrl}
+                        </code>
+                        <Button
+                          size="sm"
+                          onClick={() => navigator.clipboard.writeText(deploymentUrl)}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={downloadCode}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Project
+                    </Button>
+                    
+                    {platform === 'mobile' && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => window.open(`${deploymentUrl}/expo`, '_blank')}
+                        className="flex items-center gap-2"
+                      >
+                        <Smartphone className="w-4 h-4" />
+                        Open in Expo
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   )
 }
 
-// Component generation functions
-function generateStripeComponent() {
-  return `'use client'
-
-import { useState } from 'react'
-import { loadStripe } from '@stripe/stripe-js'
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
-import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
-
-interface PaymentFormProps {
-  amount: number
-  onSuccess?: () => void
-}
-
-function PaymentForm({ amount, onSuccess }: PaymentFormProps) {
-  const stripe = useStripe()
-  const elements = useElements()
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    
-    if (!stripe || !elements) return
-    
-    setLoading(true)
-    
-    try {
-      const { data } = await fetch('/api/stripe/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
-      }).then(res => res.json())
-
-      const { error } = await stripe.confirmCardPayment(data.clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement)!
-        }
-      })
-
-      if (error) {
-        toast.error(error.message)
-      } else {
-        toast.success('Payment successful!')
-        onSuccess?.()
-      }
-    } catch (error) {
-      toast.error('Payment failed')
-    } finally {
-      setLoading(false)
-    }
+// Web code generation functions
+function generateWebCode(elements: any[], styles: any, hasStripe: boolean, hasAuth: boolean, hasDatabase: boolean, hasCharts: boolean, isMobileResponsive: boolean) {
+  const files: Record<string, string> = {}
+  
+  // Package.json
+  files['package.json'] = generatePackageJson(hasStripe, hasAuth, hasDatabase, hasCharts, false)
+  
+  // Next.js config
+  files['next.config.js'] = generateNextConfig()
+  
+  // Tailwind config with responsive utilities
+  files['tailwind.config.js'] = generateTailwindConfig(isMobileResponsive)
+  
+  // Main App component
+  files['src/app/page.tsx'] = generateMainApp(elements, styles, isMobileResponsive)
+  
+  // Layout
+  files['src/app/layout.tsx'] = generateLayout(hasAuth)
+  
+  // Global styles
+  files['src/globals.css'] = generateGlobalStyles(isMobileResponsive)
+  
+  // Component files
+  elements.forEach((element, index) => {
+    const componentCode = generateComponentCode(element, isMobileResponsive)
+    files[`src/components/${element.type}-${index}.tsx`] = componentCode
+  })
+  
+  // API routes
+  if (hasStripe) {
+    files['src/app/api/stripe/route.ts'] = generateStripeAPI()
   }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 border rounded-lg">
-        <CardElement options={{
-          style: {
-            base: {
-              fontSize: '16px',
-              color: '#424770',
-              '::placeholder': { color: '#aab7c4' }
-            }
-          }
-        }} />
-      </div>
-      <Button type="submit" disabled={!stripe || loading} className="w-full">
-        {loading ? 'Processing...' : \`Pay $\${amount}\`}
-      </Button>
-    </form>
-  )
-}
-
-export default function StripePayment({ amount, onSuccess }: PaymentFormProps) {
-  return (
-    <Elements stripe={stripePromise}>
-      <PaymentForm amount={amount} onSuccess={onSuccess} />
-    </Elements>
-  )
-}`
-}
-
-function generateStripeCheckoutAPI() {
-  return `import { NextRequest, NextResponse } from 'next/server'
-import Stripe from 'stripe'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16'
-})
-
-export async function POST(req: NextRequest) {
-  try {
-    const { amount } = await req.json()
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100, // Convert to cents
-      currency: 'usd',
-      automatic_payment_methods: { enabled: true }
-    })
-
-    return NextResponse.json({ clientSecret: paymentIntent.client_secret })
-  } catch (error) {
-    return NextResponse.json({ error: 'Payment failed' }, { status: 500 })
+  
+  if (hasAuth) {
+    files['src/app/api/auth/route.ts'] = generateAuthAPI()
   }
-}`
+  
+  if (hasDatabase) {
+    files['src/app/api/database/route.ts'] = generateDatabaseAPI()
+    files['prisma/schema.prisma'] = generatePrismaSchema()
+  }
+  
+  // Environment template
+  files['.env.example'] = generateEnvTemplate(hasStripe, hasAuth, hasDatabase)
+  
+  return {
+    platform: 'web',
+    framework: 'Next.js',
+    responsive: isMobileResponsive,
+    files
+  }
 }
 
-function generatePackageJson(hasStripe: boolean, hasAuth: boolean, hasDatabase: boolean) {
-  const dependencies = {
+// Mobile code generation functions
+function generateMobileCode(elements: any[], styles: any, hasStripe: boolean, hasAuth: boolean, hasDatabase: boolean) {
+  const files: Record<string, string> = {}
+  
+  // Package.json for React Native
+  files['package.json'] = generateReactNativePackageJson(hasStripe, hasAuth, hasDatabase)
+  
+  // Expo config
+  files['app.json'] = generateExpoConfig()
+  
+  // Main App component
+  files['App.tsx'] = generateMobileApp(elements, styles)
+  
+  // Navigation setup
+  files['src/navigation/AppNavigator.tsx'] = generateAppNavigator()
+  
+  // Screen components
+  files['src/screens/HomeScreen.tsx'] = generateHomeScreen(elements)
+  
+  // Mobile-specific components
+  elements.forEach((element, index) => {
+    const componentCode = generateMobileComponentCode(element)
+    files[`src/components/${element.type}-${index}.tsx`] = componentCode
+  })
+  
+  // Styles
+  files['src/styles/global.ts'] = generateMobileStyles()
+  
+  // Services
+  if (hasStripe) {
+    files['src/services/stripe.ts'] = generateMobileStripeService()
+  }
+  
+  if (hasAuth) {
+    files['src/services/auth.ts'] = generateMobileAuthService()
+  }
+  
+  if (hasDatabase) {
+    files['src/services/api.ts'] = generateMobileAPIService()
+  }
+  
+  return {
+    platform: 'mobile',
+    framework: 'React Native + Expo',
+    files
+  }
+}
+
+function generatePackageJson(hasStripe: boolean, hasAuth: boolean, hasDatabase: boolean, hasCharts: boolean, isMobile: boolean) {
+  const dependencies: Record<string, string> = {
     "next": "14.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
@@ -453,7 +389,9 @@ function generatePackageJson(hasStripe: boolean, hasAuth: boolean, hasDatabase: 
     "@types/react-dom": "^18.0.0",
     "tailwindcss": "^3.3.0",
     "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0"
+    "postcss": "^8.4.0",
+    "clsx": "^2.0.0",
+    "class-variance-authority": "^0.7.0"
   }
 
   if (hasStripe) {
@@ -466,10 +404,9 @@ function generatePackageJson(hasStripe: boolean, hasAuth: boolean, hasDatabase: 
 
   if (hasAuth) {
     Object.assign(dependencies, {
+      "next-auth": "^4.24.0",
       "jsonwebtoken": "^9.0.0",
-      "bcryptjs": "^2.4.0",
-      "@types/jsonwebtoken": "^9.0.0",
-      "@types/bcryptjs": "^2.4.0"
+      "bcryptjs": "^2.4.0"
     })
   }
 
@@ -477,8 +414,15 @@ function generatePackageJson(hasStripe: boolean, hasAuth: boolean, hasDatabase: 
     Object.assign(dependencies, {
       "prisma": "^5.0.0",
       "@prisma/client": "^5.0.0",
-      "pg": "^8.11.0",
-      "@types/pg": "^8.10.0"
+      "pg": "^8.11.0"
+    })
+  }
+
+  if (hasCharts) {
+    Object.assign(dependencies, {
+      "recharts": "^2.8.0",
+      "chart.js": "^4.4.0",
+      "react-chartjs-2": "^5.2.0"
     })
   }
 
@@ -491,114 +435,782 @@ function generatePackageJson(hasStripe: boolean, hasAuth: boolean, hasDatabase: 
       "build": "next build",
       "start": "next start",
       "lint": "next lint",
-      ...(hasDatabase && { "db:generate": "prisma generate", "db:push": "prisma db push" })
+      ...(hasDatabase && { 
+        "db:generate": "prisma generate", 
+        "db:push": "prisma db push" 
+      })
     },
     dependencies
   }, null, 2)
 }
 
-// Add more component generation functions...
-function generateButtonComponent() {
-  return `import * as React from "react"
-import { cn } from "@/lib/utils"
-
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
-  size?: 'default' | 'sm' | 'lg'
-}
-
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "default", ...props }, ref) => {
-    return (
-      <button
-        className={cn(
-          "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          "disabled:pointer-events-none disabled:opacity-50",
-          {
-            "bg-primary text-primary-foreground hover:bg-primary/90": variant === "default",
-            "bg-destructive text-destructive-foreground hover:bg-destructive/90": variant === "destructive",
-            "border border-input bg-background hover:bg-accent": variant === "outline",
-            "bg-secondary text-secondary-foreground hover:bg-secondary/80": variant === "secondary",
-            "hover:bg-accent hover:text-accent-foreground": variant === "ghost",
-            "text-primary underline-offset-4 hover:underline": variant === "link"
-          },
-          {
-            "h-10 px-4 py-2": size === "default",
-            "h-9 rounded-md px-3": size === "sm",
-            "h-11 rounded-md px-8": size === "lg"
-          },
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    )
+function generateReactNativePackageJson(hasStripe: boolean, hasAuth: boolean, hasDatabase: boolean) {
+  const dependencies: Record<string, string> = {
+    "expo": "~49.0.0",
+    "react": "18.2.0",
+    "react-native": "0.72.0",
+    "@react-navigation/native": "^6.1.0",
+    "@react-navigation/stack": "^6.3.0",
+    "react-native-screens": "~3.22.0",
+    "react-native-safe-area-context": "4.6.3",
+    "react-native-gesture-handler": "~2.12.0",
+    "@expo/vector-icons": "^13.0.0"
   }
-)
 
-export { Button }`
+  if (hasStripe) {
+    Object.assign(dependencies, {
+      "@stripe/stripe-react-native": "^0.35.0"
+    })
+  }
+
+  if (hasAuth) {
+    Object.assign(dependencies, {
+      "expo-auth-session": "~5.0.0",
+      "expo-crypto": "~12.4.0"
+    })
+  }
+
+  if (hasDatabase) {
+    Object.assign(dependencies, {
+      "axios": "^1.5.0"
+    })
+  }
+
+  return JSON.stringify({
+    name: "generated-mobile-app",
+    version: "1.0.0",
+    main: "node_modules/expo/AppEntry.js",
+    scripts: {
+      "start": "expo start",
+      "android": "expo start --android",
+      "ios": "expo start --ios",
+      "web": "expo start --web"
+    },
+    dependencies,
+    devDependencies: {
+      "@babel/core": "^7.20.0",
+      "@types/react": "~18.2.14",
+      "typescript": "^5.1.3"
+    }
+  }, null, 2)
 }
 
-function generateMainPage() {
-  return `import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import Header from '@/components/layout/header'
-import Footer from '@/components/layout/footer'
-import Hero from '@/components/sections/hero'
-import Features from '@/components/sections/features'
+function generateNextConfig() {
+  return `/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    appDir: true,
+  },
+  images: {
+    domains: ['localhost', 'generated-app.replit.app'],
+  },
+}
 
-export default function Home() {
+module.exports = nextConfig`
+}
+
+function generateTailwindConfig(isMobileResponsive: boolean) {
+  return `/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      ${isMobileResponsive ? `
+      screens: {
+        'xs': '475px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+      },
+      ` : ''}
+    },
+  },
+  plugins: [],
+}`
+}
+
+function generateExpoConfig() {
+  return JSON.stringify({
+    "expo": {
+      "name": "Generated Mobile App",
+      "slug": "generated-mobile-app",
+      "version": "1.0.0",
+      "orientation": "portrait",
+      "icon": "./assets/icon.png",
+      "userInterfaceStyle": "light",
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff"
+      },
+      "assetBundlePatterns": [
+        "**/*"
+      ],
+      "ios": {
+        "supportsTablet": true
+      },
+      "android": {
+        "adaptiveIcon": {
+          "foregroundImage": "./assets/adaptive-icon.png",
+          "backgroundColor": "#FFFFFF"
+        }
+      },
+      "web": {
+        "favicon": "./assets/favicon.png"
+      }
+    }
+  }, null, 2)
+}
+
+function generateMainApp(elements: any[], styles: any, isMobileResponsive: boolean) {
+  const imports = elements.map((el, index) => 
+    `import ${el.type.charAt(0).toUpperCase() + el.type.slice(1)}Component${index} from '@/components/${el.type}-${index}'`
+  ).join('\n')
+
+  const components = elements.map((el, index) => 
+    `<${el.type.charAt(0).toUpperCase() + el.type.slice(1)}Component${index} />`
+  ).join('\n      ')
+
+  return `import React from 'react'
+${imports}
+
+export default function HomePage() {
   return (
-    <div className="min-h-screen">
-      <Header />
-      <main>
-        <Hero />
-        <Features />
+    <div className="${isMobileResponsive ? 'container mx-auto px-4 sm:px-6 lg:px-8' : 'container mx-auto px-8'}">
+      <main className="${isMobileResponsive ? 'py-8 space-y-8' : 'py-16 space-y-16'}">
+        ${components}
       </main>
-      <Footer />
     </div>
   )
 }`
 }
 
-// Add remaining generation functions...
-function generateCardComponent() { return `// Card component code...` }
-function generateInputComponent() { return `// Input component code...` }
-function generateFormComponent() { return `// Form component code...` }
-function generateHeaderComponent() { return `// Header component code...` }
-function generateFooterComponent() { return `// Footer component code...` }
-function generateSidebarComponent() { return `// Sidebar component code...` }
-function generateHeroSection() { return `// Hero section code...` }
-function generateFeaturesSection() { return `// Features section code...` }
-function generateTestimonialsSection() { return `// Testimonials section code...` }
-function generateAuthComponent() { return `// Auth component code...` }
-function generateAppWrapper() { return `// App wrapper code...` }
-function generateDocumentStructure() { return `// Document structure code...` }
-function generateCheckoutPage() { return `// Checkout page code...` }
-function generateLoginPage() { return `// Login page code...` }
-function generateRegisterPage() { return `// Register page code...` }
-function generateGlobalStyles() { return `// Global styles...` }
-function generateComponentStyles() { return `// Component styles...` }
-function generateUtilityFunctions() { return `// Utility functions...` }
-function generateConstants() { return `// Constants...` }
-function generateStripeConfig() { return `// Stripe config...` }
-function generateDatabaseConfig() { return `// Database config...` }
-function generateLocalStorageHook() { return `// Local storage hook...` }
-function generateDebounceHook() { return `// Debounce hook...` }
-function generateAuthHook() { return `// Auth hook...` }
-function generateDatabaseHook() { return `// Database hook...` }
-function generateStripeWebhookAPI() { return `// Stripe webhook API...` }
-function generateStripeCustomerAPI() { return `// Stripe customer API...` }
-function generateAuthLoginAPI() { return `// Auth login API...` }
-function generateAuthRegisterAPI() { return `// Auth register API...` }
-function generateAuthMiddleware() { return `// Auth middleware...` }
-function generateDatabaseConnection() { return `// Database connection...` }
-function generateDatabaseModels() { return `// Database models...` }
-function generateDatabaseQueries() { return `// Database queries...` }
-function generateNextConfig() { return `// Next.js config...` }
-function generateTailwindConfig() { return `// Tailwind config...` }
-function generateTSConfig() { return `// TypeScript config...` }
-function generateEnvExample() { return `// Environment variables example...` }
-function generateReadme() { return `// README content...` }
-function generatePrismaSchema() { return `// Prisma schema...` }
+function generateMobileApp(elements: any[], styles: any) {
+  return `import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import HomeScreen from './src/screens/HomeScreen';
+
+const Stack = createStackNavigator();
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}`
+}
+
+function generateLayout(hasAuth: boolean) {
+  return `import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+${hasAuth ? "import { AuthProvider } from '@/providers/auth-provider'" : ''}
+
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'Generated Website',
+  description: 'Generated by Website Builder',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        ${hasAuth ? '<AuthProvider>' : ''}
+          {children}
+        ${hasAuth ? '</AuthProvider>' : ''}
+      </body>
+    </html>
+  )
+}`
+}
+
+function generateComponentCode(element: any, isMobileResponsive: boolean) {
+  const baseClasses = isMobileResponsive ? 'w-full' : ''
+  
+  switch (element.type) {
+    case 'stripe':
+      return generateStripeComponent(isMobileResponsive)
+    case 'chart':
+      return generateChartComponent(isMobileResponsive)
+    case 'form':
+      return generateFormComponent(isMobileResponsive)
+    default:
+      return generateGenericComponent(element, isMobileResponsive)
+  }
+}
+
+function generateStripeComponent(isMobileResponsive: boolean) {
+  return `'use client'
+
+import { useState } from 'react'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
+function CheckoutForm() {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!stripe || !elements) return
+
+    setLoading(true)
+    // Payment processing logic here
+    setLoading(false)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="${isMobileResponsive ? 'max-w-md mx-auto' : 'max-w-lg'} p-6 border rounded-lg">
+      <h2 className="text-2xl font-bold mb-4">Payment</h2>
+      <div className="mb-4">
+        <CardElement className="p-4 border rounded" />
+      </div>
+      <button 
+        type="submit" 
+        disabled={!stripe || loading}
+        className="${isMobileResponsive ? 'w-full' : ''} bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+      >
+        {loading ? 'Processing...' : 'Pay Now'}
+      </button>
+    </form>
+  )
+}
+
+export default function StripeComponent() {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm />
+    </Elements>
+  )
+}`
+}
+
+function generateChartComponent(isMobileResponsive: boolean) {
+  return `'use client'
+
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+
+const data = [
+  { name: 'Jan', value: 400 },
+  { name: 'Feb', value: 300 },
+  { name: 'Mar', value: 600 },
+  { name: 'Apr', value: 800 },
+  { name: 'May', value: 500 },
+]
+
+export default function ChartComponent() {
+  return (
+    <div className="${isMobileResponsive ? 'w-full h-64 sm:h-80' : 'w-full h-96'} p-4 border rounded-lg">
+      <h2 className="text-xl font-bold mb-4">Analytics</h2>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip />
+          <Line type="monotone" dataKey="value" stroke="#8884d8" />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}`
+}
+
+function generateFormComponent(isMobileResponsive: boolean) {
+  return `'use client'
+
+import { useState } from 'react'
+
+export default function FormComponent() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    // Form submission logic
+    console.log('Form submitted:', formData)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="${isMobileResponsive ? 'max-w-md mx-auto' : 'max-w-lg'} p-6 border rounded-lg space-y-4">
+      <h2 className="text-2xl font-bold">Contact Us</h2>
+      
+      <div>
+        <label className="block text-sm font-medium mb-1">Name</label>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) => setFormData({...formData, name: e.target.value})}
+          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium mb-1">Email</label>
+        <input
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData({...formData, email: e.target.value})}
+          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium mb-1">Message</label>
+        <textarea
+          value={formData.message}
+          onChange={(e) => setFormData({...formData, message: e.target.value})}
+          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 h-24"
+          required
+        />
+      </div>
+      
+      <button 
+        type="submit"
+        className="${isMobileResponsive ? 'w-full' : ''} bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+      >
+        Send Message
+      </button>
+    </form>
+  )
+}`
+}
+
+function generateGenericComponent(element: any, isMobileResponsive: boolean) {
+  return `export default function ${element.type.charAt(0).toUpperCase() + element.type.slice(1)}Component() {
+  return (
+    <div className="${isMobileResponsive ? 'w-full p-4' : 'p-6'} border rounded-lg">
+      <h2 className="text-xl font-bold">${element.name || element.type}</h2>
+      <p className="text-gray-600 mt-2">Generated ${element.type} component</p>
+    </div>
+  )
+}`
+}
+
+function generateGlobalStyles(isMobileResponsive: boolean) {
+  return `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+${isMobileResponsive ? `
+@layer base {
+  html {
+    font-size: 16px;
+  }
+  
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+    }
+  }
+}
+
+@layer utilities {
+  .container {
+    @apply max-w-7xl mx-auto;
+  }
+  
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+}
+` : ''}`
+}
+
+function generateStripeAPI() {
+  return `import { NextRequest, NextResponse } from 'next/server'
+import Stripe from 'stripe'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-10-16',
+})
+
+export async function POST(req: NextRequest) {
+  try {
+    const { amount, currency = 'usd' } = await req.json()
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100,
+      currency,
+    })
+
+    return NextResponse.json({
+      clientSecret: paymentIntent.client_secret,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Payment processing failed' },
+      { status: 500 }
+    )
+  }
+}`
+}
+
+function generateAuthAPI() {
+  return `import { NextRequest, NextResponse } from 'next/server'
+import jwt from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
+
+export async function POST(req: NextRequest) {
+  try {
+    const { email, password, action } = await req.json()
+
+    if (action === 'login') {
+      // Login logic
+      const token = jwt.sign(
+        { email },
+        process.env.JWT_SECRET!,
+        { expiresIn: '7d' }
+      )
+      
+      return NextResponse.json({ token })
+    } else if (action === 'register') {
+      // Registration logic
+      const hashedPassword = await bcrypt.hash(password, 10)
+      
+      // Save user to database
+      return NextResponse.json({ message: 'User created successfully' })
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Authentication failed' },
+      { status: 500 }
+    )
+  }
+}`
+}
+
+function generateDatabaseAPI() {
+  return `import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+export async function GET(req: NextRequest) {
+  try {
+    const data = await prisma.user.findMany()
+    return NextResponse.json(data)
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Database query failed' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const result = await prisma.user.create({
+      data: body
+    })
+    return NextResponse.json(result)
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Database insert failed' },
+      { status: 500 }
+    )
+  }
+}`
+}
+
+function generatePrismaSchema() {
+  return `generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+}`
+}
+
+function generateEnvTemplate(hasStripe: boolean, hasAuth: boolean, hasDatabase: boolean) {
+  let env = `# Environment Variables Template
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+`
+
+  if (hasStripe) {
+    env += `
+# Stripe
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+`
+  }
+
+  if (hasAuth) {
+    env += `
+# Authentication
+JWT_SECRET=your-jwt-secret-here
+NEXTAUTH_SECRET=your-nextauth-secret-here
+NEXTAUTH_URL=http://localhost:3000
+`
+  }
+
+  if (hasDatabase) {
+    env += `
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/database"
+`
+  }
+
+  return env
+}
+
+function generateMobileComponentCode(element: any) {
+  return `import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function ${element.type.charAt(0).toUpperCase() + element.type.slice(1)}Component() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>${element.name || element.type}</Text>
+      <Text style={styles.description}>Mobile ${element.type} component</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    marginVertical: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 14,
+    color: '#666',
+  },
+});`
+}
+
+function generateHomeScreen(elements: any[]) {
+  const imports = elements.map((el, index) => 
+    `import ${el.type.charAt(0).toUpperCase() + el.type.slice(1)}Component${index} from '../components/${el.type}-${index}'`
+  ).join('\n')
+
+  const components = elements.map((el, index) => 
+    `<${el.type.charAt(0).toUpperCase() + el.type.slice(1)}Component${index} />`
+  ).join('\n      ')
+
+  return `import React from 'react';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+${imports}
+
+export default function HomeScreen() {
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>Generated Mobile App</Text>
+        ${components}
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  content: {
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+});`
+}
+
+function generateAppNavigator() {
+  return `import React from 'react';
+import { createStackNavigator } from '@react-navigation/stack';
+import HomeScreen from '../screens/HomeScreen';
+
+const Stack = createStackNavigator();
+
+export default function AppNavigator() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="Home" 
+        component={HomeScreen}
+        options={{ title: 'Generated App' }}
+      />
+    </Stack.Navigator>
+  );
+}`
+}
+
+function generateMobileStyles() {
+  return `import { StyleSheet } from 'react-native';
+
+export const globalStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  content: {
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  text: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#333',
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});`
+}
+
+function generateMobileStripeService() {
+  return `import { StripeProvider } from '@stripe/stripe-react-native';
+
+export const STRIPE_PUBLISHABLE_KEY = 'pk_test_your_key_here';
+
+export function initializeStripe() {
+  return (
+    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
+      {/* Your app components */}
+    </StripeProvider>
+  );
+}`
+}
+
+function generateMobileAuthService() {
+  return `import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export const AuthService = {
+  async login(email: string, password: string) {
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, action: 'login' })
+      });
+      
+      const data = await response.json();
+      if (data.token) {
+        await AsyncStorage.setItem('token', data.token);
+      }
+      return data;
+    } catch (error) {
+      throw new Error('Login failed');
+    }
+  },
+
+  async logout() {
+    await AsyncStorage.removeItem('token');
+  },
+
+  async getToken() {
+    return await AsyncStorage.getItem('token');
+  }
+};`
+}
+
+function generateMobileAPIService() {
+  return `import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_BASE_URL = 'https://your-api-url.com';
+
+export const ApiService = {
+  async request(endpoint: string, options: any = {}) {
+    const token = await AsyncStorage.getItem('token');
+    
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: \`Bearer \${token}\` }),
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    const response = await fetch(\`\${API_BASE_URL}\${endpoint}\`, config);
+    return response.json();
+  },
+
+  async get(endpoint: string) {
+    return this.request(endpoint);
+  },
+
+  async post(endpoint: string, data: any) {
+    return this.request(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+};`
+}
+
+export default CodeGenerator

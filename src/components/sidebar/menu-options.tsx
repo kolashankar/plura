@@ -29,6 +29,7 @@ import CustomModal from '../global/custom-modal'
 import SubAccountDetails from '../forms/subaccount-details'
 import { Separator } from '../ui/separator'
 import { icons } from '@/lib/constants'
+import { Database, Globe } from 'lucide-react'
 
 type Props = {
   defaultOpen?: boolean
