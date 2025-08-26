@@ -13,6 +13,7 @@ import TwoColumnsPlaceholder from './two-columns-placeholder'
 import LinkPlaceholder from './link-placeholder'
 import ContactFormComponentPlaceholder from './contact-form-placeholder'
 import CheckoutPlaceholder from './checkout-placeholder'
+import CodeGenerator from './code-generator' // Assuming CodeGenerator is in the same directory
 
 type Props = {}
 
@@ -111,7 +112,11 @@ const ComponentsTab = (props: Props) => {
             ))}
         </AccordionContent>
       </AccordionItem>
-    </Accordion>
+
+      <div className="p-4 border-t">
+        <CodeGenerator />
+      </div>
+    </div>
   )
 }
 
