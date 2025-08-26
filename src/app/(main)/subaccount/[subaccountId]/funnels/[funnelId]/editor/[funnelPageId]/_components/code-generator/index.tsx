@@ -436,8 +436,8 @@ function generatePackageJson(hasStripe: boolean, hasAuth: boolean, hasDatabase: 
       "start": "next start",
       "lint": "next lint",
       ...(hasDatabase && { 
-        "db:generate": "prisma generate", 
-        "db:push": "prisma db push" 
+        "db:generate": "bunx prisma generate", 
+        "db:push": "bunx prisma db push" 
       })
     },
     dependencies
