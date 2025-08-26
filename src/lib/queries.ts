@@ -906,3 +906,197 @@ export const getPipelines = async (subaccountId: string) => {
   })
   return response
 }
+
+export const getCustomComponents = async (subaccountId: string) => {
+  const response = await db.customComponent.findMany({
+    where: { subAccountId: subaccountId },
+    orderBy: { createdAt: 'desc' },
+  })
+  return response
+}
+
+export const createCustomComponent = async (
+  subaccountId: string,
+  componentData: {
+    name: string
+    type: string
+    content: any
+    styles: any
+    category?: string
+    code: string
+    createdBy: string
+  }
+) => {
+  const response = await db.customComponent.create({
+    data: {
+      ...componentData,
+      subAccountId: subaccountId,
+    },
+  })
+  return response
+}
+
+export const updateCustomComponent = async (
+  componentId: string,
+  componentData: Partial<{
+    name: string
+    type: string
+    content: any
+    styles: any
+    category: string
+    code: string
+    isActive: boolean
+  }>
+) => {
+  const response = await db.customComponent.update({
+    where: { id: componentId },
+    data: componentData,
+  })
+  return response
+}
+
+export const deleteCustomComponent = async (componentId: string) => {
+  const response = await db.customComponent.delete({
+    where: { id: componentId },
+  })
+  return response
+}
+
+export const getDeployments = async (subaccountId: string) => {
+  const response = await db.deployment.findMany({
+    where: { subAccountId: subaccountId },
+    orderBy: { createdAt: 'desc' },
+  })
+  return response
+}
+
+export const createDeployment = async (
+  subaccountId: string,
+  deploymentData: {
+    name: string
+    type?: string
+    config?: any
+  }
+) => {
+  const response = await db.deployment.create({
+    data: {
+      ...deploymentData,
+      subAccountId: subaccountId,
+    },
+  })
+  return response
+}
+
+export const updateDeployment = async (
+  deploymentId: string,
+  deploymentData: Partial<{
+    name: string
+    url: string
+    status: string
+    type: string
+    config: any
+  }>
+) => {
+  const response = await db.deployment.update({
+    where: { id: deploymentId },
+    data: deploymentData,
+  })
+  return response
+}
+
+export const deleteDeployment = async (deploymentId: string) => {
+  const response = await db.deployment.delete({
+    where: { id: deploymentId },
+  })
+  return response
+}
+
+export const getDatabases = async (subaccountId: string) => {
+  const response = await db.database.findMany({
+    where: { subaccountId },
+    orderBy: { createdAt: 'desc' },
+  })
+  return response
+}
+
+export const createDatabase = async (
+  subaccountId: string,
+  databaseData: {
+    name: string
+    provider: string
+    connectionString?: string
+    host?: string
+    port?: number
+    database?: string
+    username?: string
+    password?: string
+    isDefault?: boolean
+  }
+) => {
+  // If setting as default, unset other defaults first
+  if (databaseData.isDefault) {
+    await db.database.updateMany({
+      where: { 
+        subaccountId,
+        isDefault: true 
+      },
+      data: { isDefault: false },
+    })
+  }
+
+  const response = await db.database.create({
+    data: {
+      ...databaseData,
+      subaccountId,
+    },
+  })
+  return response
+}
+
+export const getIntegrations = async (subaccountId: string) => {
+  const response = await db.integration.findMany({
+    where: { subaccountId },
+    orderBy: { createdAt: 'desc' },
+  })
+  return response
+}
+
+export const createIntegration = async (
+  subaccountId: string,
+  integrationData: {
+    name: string
+    provider: string
+    apiKey?: string
+    apiSecret?: string
+    webhookUrl?: string
+    config?: string
+  }
+) => {
+  const response = await db.integration.create({
+    data: {
+      ...integrationData,
+      subaccountId,
+    },
+  })
+  return response
+}
+
+export const getAITemplates = async () => {
+  const response = await db.aITemplate.findMany({
+    where: { isActive: true },
+    orderBy: { usageCount: 'desc' },
+  })
+  return response
+}
+
+export const updateTemplateUsage = async (templateId: string) => {
+  const response = await db.aITemplate.update({
+    where: { id: templateId },
+    data: {
+      usageCount: {
+        increment: 1,
+      },
+    },
+  })
+  return response
+}
