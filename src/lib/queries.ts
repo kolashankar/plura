@@ -1089,6 +1089,41 @@ export const getAITemplates = async () => {
   return response
 }
 
+export const createTeamInvitation = async (
+  subaccountId: string,
+  invitations: { email: string; role: Role; permissions: string[] }[]
+) => {
+  const responses = await Promise.all(
+    invitations.map(invitation => 
+      db.invitation.create({
+        data: {
+          email: invitation.email,
+          agencyId: '', // Will be set based on subaccount
+          role: invitation.role,
+          status: 'PENDING',
+        }
+      })
+    )
+  )
+  return responses
+}
+
+export const getTeamAnalytics = async (subaccountId: string) => {
+  const response = await db.user.groupBy({
+    by: ['role'],
+    where: {
+      Permissions: {
+        some: {
+          subAccountId: subaccountId,
+          access: true
+        }
+      }
+    },
+    _count: true
+  })
+  return response
+}
+
 export const updateTemplateUsage = async (templateId: string) => {
   const response = await db.aITemplate.update({
     where: { id: templateId },
