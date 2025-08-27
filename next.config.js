@@ -10,6 +10,9 @@ const nextConfig = {
     ],
   },
   reactStrictMode: false,
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
 }
 
 module.exports = nextConfig
