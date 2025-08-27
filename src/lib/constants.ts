@@ -237,6 +237,7 @@ export type EditorBtns =
   | 'buttonGroup'
   | 'steps'
   | 'tableOfContents'
+  | null
   | 'stickyNav'
   | 'megaMenu'
   | 'logo'

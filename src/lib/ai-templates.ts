@@ -288,5 +288,5 @@ export function getTemplateById(id: string): AITemplate | undefined {
 }
 
 export function getAllCategories(): string[] {
-  return [...new Set(AI_TEMPLATES.map(template => template.category))]
+  return Array.from(new Set(AI_TEMPLATES.map(template => template.category)))
 }

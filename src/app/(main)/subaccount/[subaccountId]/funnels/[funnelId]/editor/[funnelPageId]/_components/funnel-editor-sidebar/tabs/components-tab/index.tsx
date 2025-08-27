@@ -16,18 +16,45 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   AlertTriangle,
+  ArrowUp,
+  BarChartHorizontal,
+  Bell,
+  Calendar,
+  ChevronDown,
+  Clock,
+  CreditCard,
   Database,
+  DollarSign,
+  FileText,
   Gift,
+  GitCompareArrows,
+  Heart,
+  HelpCircle,
+  Image,
   Link2,
+  List,
+  Loader2,
+  MailIcon,
+  MailPlus,
+  Map,
+  Megaphone,
+  Menu,
+  MessageCircle,
+  Package,
   Plus,
+  Search,
   SettingsIcon,
+  Share2,
+  ShoppingCart,
+  SlidersHorizontal,
   Square,
   SquareCode,
-  SquareStack3D,
-  Youtube,
-  FileText,
-  Image,
+  SquareStack,
+  ToggleLeft,
   Type,
+  Upload,
+  Users,
+  Youtube,
   Minus,
   Star,
   Grid3x3,
@@ -51,7 +78,7 @@ type Props = {}
 const ComponentsTab = ({ subaccountId }: { subaccountId: string }) => {
   const [loading, setLoading] = useState<boolean>(false)
   const [customComponents, setCustomComponents] = useState<any[]>([])
-  const { editor } = useEditor()
+  const { state } = useEditor()
 
   useEffect(() => {
     const fetchCustomComponents = async () => {
@@ -61,7 +88,7 @@ const ComponentsTab = ({ subaccountId }: { subaccountId: string }) => {
       setLoading(false)
     }
     fetchCustomComponents()
-  }, [subaccountId, editor.components]) // Refetch when subaccountId or editor components change
+  }, [subaccountId]) // Refetch when subaccountId changes
 
   const elementCategories = {
     basic: [
@@ -223,7 +250,7 @@ const ComponentsTab = ({ subaccountId }: { subaccountId: string }) => {
         id: 'card',
         name: 'Card',
         type: 'card',
-        Component: <SquareStack3D size={20} />,
+        Component: <SquareStack size={20} />,
         content: [],
         styles: { padding: '24px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
       },
@@ -297,7 +324,7 @@ const ComponentsTab = ({ subaccountId }: { subaccountId: string }) => {
         id: 'toggle',
         name: 'Toggle Switch',
         type: 'toggle',
-        Component: <Switch size={20} />,
+        Component: <ToggleLeft size={20} />,
         content: [{ checked: false, label: 'Enable feature' }],
         styles: {},
       },
@@ -323,7 +350,7 @@ const ComponentsTab = ({ subaccountId }: { subaccountId: string }) => {
         id: 'productCard',
         name: 'Product Card',
         type: 'productCard',
-        Component: <SquareStack3D size={20} />,
+        Component: <SquareStack size={20} />,
         content: [{ title: 'Product Name', price: '$99', image: '/product.jpg' }],
         styles: { border: '1px solid #ddd', borderRadius: '8px', padding: '16px' },
       },
@@ -421,7 +448,7 @@ const ComponentsTab = ({ subaccountId }: { subaccountId: string }) => {
         id: 'tabs',
         name: 'Tab Navigation',
         type: 'tabs',
-        Component: <TabsList size={20} />,
+        Component: <Layers size={20} />,
         content: [{ tabs: ['Tab 1', 'Tab 2', 'Tab 3'] }],
         styles: { borderBottom: '1px solid #ddd' },
       },
@@ -642,219 +669,215 @@ const ComponentsTab = ({ subaccountId }: { subaccountId: string }) => {
 
   const ComponentRequestModal = ({ subaccountId }: { subaccountId: string }) => {
     return (
-      <CustomModal
-        title="Create New Component"
-        trigger={
-          <Button variant="ghost" className="w-full flex gap-2">
-            <Plus size={15} />
-            Create New Component
-          </Button>
-        }
-      >
-        <ComponentRequestForm
-          subaccountId={subaccountId}
-          editorComponents={editor.components}
-          setCustomComponents={setCustomComponents}
-        />
-      </CustomModal>
+      <Button variant="ghost" className="w-full flex gap-2">
+        <Plus size={15} />
+        Create New Component
+      </Button>
     )
   }
 
   return (
-    <Accordion
-      type="multiple"
-      className="w-full"
-      defaultValue={['Layout', 'Elements']}
-    >
-      <AccordionItem
-        value="Layout"
-        className="px-6 py-0 border-y-[1px]"
+    <>
+      <Accordion
+        type="multiple"
+        className="w-full"
+        defaultValue={['Layout', 'Elements']}
       >
-        <AccordionTrigger className="!no-underline">Layout</AccordionTrigger>
-        <AccordionContent className="flex flex-wrap gap-2 ">
-          {elementCategories.layout.map((element) => (
-            <div
-              key={element.id}
-              className="flex-col items-center justify-center flex"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('componentType', element.type)
-              }}
-            >
-              {element.Component}
-              <span className="text-muted-foreground">{element.name}</span>
-            </div>
-          ))}
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem
-        value="Elements"
-        className="px-6 py-0 border-y-[1px]"
-      >
-        <AccordionTrigger className="!no-underline">Basic Elements</AccordionTrigger>
-        <AccordionContent className="flex flex-wrap gap-2 ">
-          {elementCategories.basic.map((element) => (
-            <div
-              key={element.id}
-              className="flex-col items-center justify-center flex"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('componentType', element.type)
-              }}
-            >
-              {element.Component}
-              <span className="text-muted-foreground">{element.name}</span>
-            </div>
-          ))}
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem
-        value="Forms"
-        className="px-6 py-0 border-y-[1px]"
-      >
-        <AccordionTrigger className="!no-underline">Forms</AccordionTrigger>
-        <AccordionContent className="flex flex-wrap gap-2 ">
-          {elementCategories.forms.map((element) => (
-            <div
-              key={element.id}
-              className="flex-col items-center justify-center flex"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('componentType', element.type)
-              }}
-            >
-              {element.Component}
-              <span className="text-muted-foreground">{element.name}</span>
-            </div>
-          ))}
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem
-        value="Ecommerce"
-        className="px-6 py-0 border-y-[1px]"
-      >
-        <AccordionTrigger className="!no-underline">Ecommerce</AccordionTrigger>
-        <AccordionContent className="flex flex-wrap gap-2 ">
-          {elementCategories.ecommerce.map((element) => (
-            <div
-              key={element.id}
-              className="flex-col items-center justify-center flex"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('componentType', element.type)
-              }}
-            >
-              {element.Component}
-              <span className="text-muted-foreground">{element.name}</span>
-            </div>
-          ))}
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem
-        value="Navigation"
-        className="px-6 py-0 border-y-[1px]"
-      >
-        <AccordionTrigger className="!no-underline">Navigation</AccordionTrigger>
-        <AccordionContent className="flex flex-wrap gap-2 ">
-          {elementCategories.navigation.map((element) => (
-            <div
-              key={element.id}
-              className="flex-col items-center justify-center flex"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('componentType', element.type)
-              }}
-            >
-              {element.Component}
-              <span className="text-muted-foreground">{element.name}</span>
-            </div>
-          ))}
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem
-        value="Content"
-        className="px-6 py-0 border-y-[1px]"
-      >
-        <AccordionTrigger className="!no-underline">Content</AccordionTrigger>
-        <AccordionContent className="flex flex-wrap gap-2 ">
-          {elementCategories.content.map((element) => (
-            <div
-              key={element.id}
-              className="flex-col items-center justify-center flex"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('componentType', element.type)
-              }}
-            >
-              {element.Component}
-              <span className="text-muted-foreground">{element.name}</span>
-            </div>
-          ))}
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem
-        value="Advanced"
-        className="px-6 py-0 border-y-[1px]"
-      >
-        <AccordionTrigger className="!no-underline">Advanced</AccordionTrigger>
-        <AccordionContent className="flex flex-wrap gap-2 ">
-          {elementCategories.advanced.map((element) => (
-            <div
-              key={element.id}
-              className="flex-col items-center justify-center flex"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('componentType', element.type)
-              }}
-            >
-              {element.Component}
-              <span className="text-muted-foreground">{element.name}</span>
-            </div>
-          ))}
-        </AccordionContent>
-      </AccordionItem>
-
-      <AccordionItem value="custom" className="px-6 py-0 ">
-        <AccordionTrigger className="!no-underline">
-          Custom Components
-        </AccordionTrigger>
-        <AccordionContent className="flex flex-wrap gap-2">
-          {loading ? (
-            <div className="text-center py-4">Loading custom components...</div>
-          ) : customComponents.length > 0 ? (
-            customComponents.map((component) => (
+        <AccordionItem
+          value="Layout"
+          className="px-6 py-0 border-y-[1px]"
+        >
+          <AccordionTrigger className="!no-underline">Layout</AccordionTrigger>
+          <AccordionContent className="flex flex-wrap gap-2 ">
+            {elementCategories.layout.map((element) => (
               <div
-                key={component.id}
+                key={element.id}
+                className="flex-col items-center justify-center flex"
                 draggable
                 onDragStart={(e) => {
-                  if (component.type === null) return
-                  e.dataTransfer.setData('componentType', component.type)
-                  e.dataTransfer.setData('customComponent', JSON.stringify(component))
+                  e.dataTransfer.setData('componentType', element.type)
                 }}
-                className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center cursor-grab border-2 border-dashed border-muted-foreground/50 hover:border-muted-foreground group"
-                title={component.name}
               >
-                <div className="flex flex-col items-center">
-                  <SquareCode size={20} className="text-muted-foreground group-hover:text-foreground" />
-                  <span className="text-xs text-muted-foreground group-hover:text-foreground truncate max-w-12">
-                    {component.name}
-                  </span>
-                </div>
+                {element.Component}
+                <span className="text-muted-foreground">{element.name}</span>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              No custom components yet. Create one using the button below.
-            </div>
-          )}
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+            ))}
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem
+          value="Elements"
+          className="px-6 py-0 border-y-[1px]"
+        >
+          <AccordionTrigger className="!no-underline">Basic Elements</AccordionTrigger>
+          <AccordionContent className="flex flex-wrap gap-2 ">
+            {elementCategories.basic.map((element) => (
+              <div
+                key={element.id}
+                className="flex-col items-center justify-center flex"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('componentType', element.type)
+                }}
+              >
+                {element.Component}
+                <span className="text-muted-foreground">{element.name}</span>
+              </div>
+            ))}
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem
+          value="Forms"
+          className="px-6 py-0 border-y-[1px]"
+        >
+          <AccordionTrigger className="!no-underline">Forms</AccordionTrigger>
+          <AccordionContent className="flex flex-wrap gap-2 ">
+            {elementCategories.forms.map((element) => (
+              <div
+                key={element.id}
+                className="flex-col items-center justify-center flex"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('componentType', element.type)
+                }}
+              >
+                {element.Component}
+                <span className="text-muted-foreground">{element.name}</span>
+              </div>
+            ))}
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem
+          value="Ecommerce"
+          className="px-6 py-0 border-y-[1px]"
+        >
+          <AccordionTrigger className="!no-underline">Ecommerce</AccordionTrigger>
+          <AccordionContent className="flex flex-wrap gap-2 ">
+            {elementCategories.ecommerce.map((element) => (
+              <div
+                key={element.id}
+                className="flex-col items-center justify-center flex"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('componentType', element.type)
+                }}
+              >
+                {element.Component}
+                <span className="text-muted-foreground">{element.name}</span>
+              </div>
+            ))}
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem
+          value="Navigation"
+          className="px-6 py-0 border-y-[1px]"
+        >
+          <AccordionTrigger className="!no-underline">Navigation</AccordionTrigger>
+          <AccordionContent className="flex flex-wrap gap-2 ">
+            {elementCategories.navigation.map((element) => (
+              <div
+                key={element.id}
+                className="flex-col items-center justify-center flex"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('componentType', element.type)
+                }}
+              >
+                {element.Component}
+                <span className="text-muted-foreground">{element.name}</span>
+              </div>
+            ))}
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem
+          value="Content"
+          className="px-6 py-0 border-y-[1px]"
+        >
+          <AccordionTrigger className="!no-underline">Content</AccordionTrigger>
+          <AccordionContent className="flex flex-wrap gap-2 ">
+            {elementCategories.content.map((element) => (
+              <div
+                key={element.id}
+                className="flex-col items-center justify-center flex"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('componentType', element.type)
+                }}
+              >
+                {element.Component}
+                <span className="text-muted-foreground">{element.name}</span>
+              </div>
+            ))}
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem
+          value="Advanced"
+          className="px-6 py-0 border-y-[1px]"
+        >
+          <AccordionTrigger className="!no-underline">Advanced</AccordionTrigger>
+          <AccordionContent className="flex flex-wrap gap-2 ">
+            {elementCategories.advanced.map((element) => (
+              <div
+                key={element.id}
+                className="flex-col items-center justify-center flex"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('componentType', element.type)
+                }}
+              >
+                {element.Component}
+                <span className="text-muted-foreground">{element.name}</span>
+              </div>
+            ))}
+          </AccordionContent>
+        </AccordionItem>
 
-    <div className="p-4 border-t space-y-4">
-      <ComponentRequestModal subaccountId={subaccountId} />
-      <CodeGenerator />
-    </div>
+        <AccordionItem value="custom" className="px-6 py-0 ">
+          <AccordionTrigger className="!no-underline">
+            Custom Components
+          </AccordionTrigger>
+          <AccordionContent className="flex flex-wrap gap-2">
+            {loading ? (
+              <div className="text-center py-4">Loading custom components...</div>
+            ) : customComponents.length > 0 ? (
+              customComponents.map((component) => (
+                <div
+                  key={component.id}
+                  draggable
+                  onDragStart={(e) => {
+                    if (component.type === null) return
+                    e.dataTransfer.setData('componentType', component.type)
+                    e.dataTransfer.setData('customComponent', JSON.stringify(component))
+                  }}
+                  className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center cursor-grab border-2 border-dashed border-muted-foreground/50 hover:border-muted-foreground group"
+                  title={component.name}
+                >
+                  <div className="flex flex-col items-center">
+                    <SquareCode size={20} className="text-muted-foreground group-hover:text-foreground" />
+                    <span className="text-xs text-muted-foreground group-hover:text-foreground truncate max-w-12">
+                      {component.name}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                No custom components yet. Create one using the button below.
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <div className="p-4 border-t space-y-4">
+        <ComponentRequestModal subaccountId={subaccountId} />
+        <CodeGenerator 
+          elements={state.editor.elements}
+          styles={state.editor.selectedElement.styles}
+          funnelPageId={state.editor.funnelPageId}
+          subaccountId={subaccountId}
+        />
+      </div>
+    </>
   )
 }
 

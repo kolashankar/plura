@@ -147,9 +147,9 @@ Format your response as a JSON object with the following structure:
     // Enhance with template data if available
     if (templateData) {
       generatedData.templateUsed = templateData.name
-      generatedData.features = [...new Set([...generatedData.features, ...templateData.features])]
+      generatedData.features = Array.from(new Set([...generatedData.features, ...templateData.features]))
       generatedData.dependencies.dependencies = [
-        ...new Set([...generatedData.dependencies.dependencies, ...templateData.dependencies])
+        ...Array.from(new Set([...generatedData.dependencies.dependencies, ...templateData.dependencies]))
       ]
     }
 
@@ -163,7 +163,7 @@ Format your response as a JSON object with the following structure:
   } catch (error) {
     console.error('AI generation failed:', error)
     return NextResponse.json(
-      { error: 'Failed to generate feature', details: error.message },
+      { error: 'Failed to generate feature', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
@@ -233,7 +233,7 @@ export async function GET() {
   try {
     return NextResponse.json({
       templates: AI_TEMPLATES,
-      categories: [...new Set(AI_TEMPLATES.map(t => t.category))]
+      categories: Array.from(new Set(AI_TEMPLATES.map(t => t.category)))
     })
   } catch (error) {
     return NextResponse.json(

@@ -75,7 +75,7 @@ export default function HostingPage() {
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    You'll need to update your DNS settings after adding the domain
+                    You&apos;ll need to update your DNS settings after adding the domain
                   </p>
                 </div>
               </div>

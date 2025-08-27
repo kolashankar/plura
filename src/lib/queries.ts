@@ -162,6 +162,9 @@ export const verifyAndAcceptInvitation = async () => {
       role: invitationExists.role,
       createdAt: new Date(),
       updatedAt: new Date(),
+      plan: 'STARTER',
+      isActive: true,
+      lastLoginAt: null,
     })
     await saveActivityLogsNotification({
       agencyId: invitationExists?.agencyId,
@@ -1437,18 +1440,28 @@ export const updatePlatformAnalytics = async (data: {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  return await db.platformAnalytics.upsert({
-    where: { date: today },
-    update: {
-      ...data,
-      metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
-    },
-    create: {
-      date: today,
-      ...data,
-      metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
-    },
+  // Find existing record for today
+  const existing = await db.platformAnalytics.findFirst({
+    where: { date: today }
   })
+
+  if (existing) {
+    return await db.platformAnalytics.update({
+      where: { id: existing.id },
+      data: {
+        ...data,
+        metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
+      }
+    })
+  } else {
+    return await db.platformAnalytics.create({
+      data: {
+        date: today,
+        ...data,
+        metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
+      }
+    })
+  }
 }
 
 export const getPlatformAnalytics = async (dateFrom?: Date, dateTo?: Date) => {

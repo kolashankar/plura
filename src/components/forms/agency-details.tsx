@@ -154,6 +154,7 @@ const AgencyDetails = ({ data }: Props) => {
         companyEmail: values.companyEmail,
         connectAccountId: '',
         goal: 5,
+        isActive: true,
       })
       toast({
         title: 'Created Agency',

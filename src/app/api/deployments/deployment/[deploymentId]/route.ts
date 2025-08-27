@@ -1,6 +1,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { join } from 'path'
+import { rmSync } from 'fs'
 
 export async function POST(
   request: NextRequest,
@@ -79,14 +81,13 @@ export async function POST(
   }
 }
 
-const prisma = new PrismaClient()
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { deploymentId: string } }
 ) {
   try {
-    const deployment = await prisma.deployment.findUnique({
+    const deployment = await db.deployment.findUnique({
       where: { id: params.deploymentId }
     })
 
@@ -112,7 +113,7 @@ export async function DELETE(
   { params }: { params: { deploymentId: string } }
 ) {
   try {
-    const deployment = await prisma.deployment.findUnique({
+    const deployment = await db.deployment.findUnique({
       where: { id: params.deploymentId }
     })
 
@@ -132,7 +133,7 @@ export async function DELETE(
     }
 
     // Delete from database
-    await prisma.deployment.delete({
+    await db.deployment.delete({
       where: { id: params.deploymentId }
     })
 
@@ -154,14 +155,14 @@ export async function PUT(
   { params }: { params: { deploymentId: string } }
 ) {
   try {
-    const { name, status, deploymentUrl } = await req.json()
+    const { name, status, url } = await req.json()
     
-    const deployment = await prisma.deployment.update({
+    const deployment = await db.deployment.update({
       where: { id: params.deploymentId },
       data: {
         name,
         status,
-        deploymentUrl,
+        url,
         updatedAt: new Date()
       }
     })

@@ -93,6 +93,11 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
     ]),
   })
 
+  const mapRole = (role: any) => {
+    if (role === 'SUPER_ADMIN' || role === 'PLATFORM_ADMIN') return 'AGENCY_OWNER'
+    return role
+  }
+
   const form = useForm<z.infer<typeof userDataSchema>>({
     resolver: zodResolver(userDataSchema),
     mode: 'onChange',
@@ -100,7 +105,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
       name: userData ? userData.name : data?.user?.name,
       email: userData ? userData.email : data?.user?.email,
       avatarUrl: userData ? userData.avatarUrl : data?.user?.avatarUrl,
-      role: userData ? userData.role : data?.user?.role,
+      role: userData ? mapRole(userData.role) : mapRole(data?.user?.role),
     },
   })
 
@@ -116,10 +121,20 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
 
   useEffect(() => {
     if (data.user) {
-      form.reset(data.user)
+      form.reset({
+        name: data.user.name,
+        email: data.user.email,
+        avatarUrl: data.user.avatarUrl,
+        role: mapRole(data.user.role)
+      })
     }
     if (userData) {
-      form.reset(userData)
+      form.reset({
+        name: userData.name,
+        email: userData.email,
+        avatarUrl: userData.avatarUrl,
+        role: mapRole(userData.role)
+      })
     }
   }, [userData, data])
 

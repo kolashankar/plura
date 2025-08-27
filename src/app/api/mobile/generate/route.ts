@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
 }
 
 function generatePackageJson(appName: string, features: string[]): string {
-  const dependencies = {
-    'expo': '~49.0.15',
+  const dependencies: { [key: string]: string } = {
+    'expo': '^49.0.0',
     'react': '18.2.0',
     'react-native': '0.72.6',
     '@react-navigation/native': '^6.1.9',

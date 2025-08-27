@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(req: NextRequest) {
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     // Save to database if subaccountId is provided
     if (subaccountId) {
-      await prisma.customComponent.create({
+      await db.customComponent.create({
         data: {
           id: componentStructure.id,
           name: componentStructure.name,

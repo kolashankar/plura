@@ -5,7 +5,7 @@ import { auth } from '@clerk/nextjs'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { subaccountId: string } }
+  { params }: { params: { subAccountId: string } }
 ) {
   try {
     const { userId } = auth()
@@ -15,13 +15,13 @@ export async function GET(
 
     const deployments = await db.deployment.findMany({
       where: {
-        subaccountId: params.subaccountId
+        subAccountId: params.subAccountId
       },
       orderBy: {
         createdAt: 'desc'
       },
       include: {
-        funnel: {
+        subAccount: {
           select: {
             name: true
           }
@@ -41,7 +41,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { subaccountId: string } }
+  { params }: { params: { subAccountId: string } }
 ) {
   try {
     const { userId } = auth()
@@ -50,16 +50,14 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { funnelId, name, domain } = body
+    const { name, url } = body
 
     const deployment = await db.deployment.create({
       data: {
         name,
-        domain,
+        url,
         status: 'pending',
-        subaccountId: params.subaccountId,
-        funnelId,
-        deployedBy: userId
+        subAccountId: params.subAccountId
       }
     })
 

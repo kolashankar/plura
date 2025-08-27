@@ -58,12 +58,7 @@ export async function GET(req: NextRequest) {
     const items = await db.marketplaceItem.findMany({
       where: whereClause,
       orderBy,
-      take: 50,
-      include: {
-        _count: {
-          select: { downloads: true }
-        }
-      }
+      take: 50
     })
 
     const categories = await db.marketplaceItem.groupBy({

@@ -105,7 +105,7 @@ export default function AIAssistant({ isOpen, onClose, onFeatureGenerated, pageD
     }
   }
 
-  const useSuggestedFeature = (feature: string) => {
+  const handleSuggestedFeature = async (feature: string) => {
     setPrompt(feature)
   }
 
@@ -129,8 +129,8 @@ export default function AIAssistant({ isOpen, onClose, onFeatureGenerated, pageD
                   <Sparkles className="w-12 h-12 mx-auto mb-4 text-purple-300" />
                   <h3 className="font-semibold mb-2">AI Design Assistant Ready</h3>
                   <p className="text-sm">
-                    Ask me to create any feature, component, or page for your website.
-                    I'll generate the code and add it to your design automatically.
+                    Tell me what feature, component, or page you&apos;d like to create for your website.
+                    I&apos;ll generate the code and add it to your design automatically.
                   </p>
                 </div>
               ) : (
@@ -194,7 +194,7 @@ export default function AIAssistant({ isOpen, onClose, onFeatureGenerated, pageD
                   key={index}
                   variant="outline"
                   size="sm"
-                  onClick={() => useSuggestedFeature(feature)}
+                  onClick={() => handleSuggestedFeature(feature)}
                   className="w-full text-left justify-start h-auto p-3"
                   disabled={isGenerating}
                 >
