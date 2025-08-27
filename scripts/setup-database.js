@@ -102,19 +102,116 @@ async function createDatabase() {
 
     await connection.end();
 
-    console.log('🎉 Database setup completed!');
-    console.log('📝 Next steps:');
-    console.log('1. Update your .env file with the correct database credentials');
-    console.log('2. Run: npm run db:push');
-    console.log('3. Start your development server: npm run dev');
+    // Create admin setup to database script
+    // Create admin configurations
+  console.log('🔧 Setting up admin configurations...')
 
-  } catch (error) {
-    console.error('❌ Database setup failed:', error.message);
-    process.exit(1);
+  // System configurations
+  const systemConfigs = [
+    {
+      key: 'platform_name',
+      value: 'Advanced Website Builder',
+      type: 'string',
+      description: 'Platform display name',
+      isPublic: true
+    },
+    {
+      key: 'max_agencies_per_user',
+      value: '5',
+      type: 'number',
+      description: 'Maximum agencies per user',
+      isPublic: false
+    },
+    {
+      key: 'default_storage_limit',
+      value: '10737418240',
+      type: 'number',
+      description: 'Default storage limit in bytes (10GB)',
+      isPublic: false
+    },
+    {
+      key: 'maintenance_mode',
+      value: 'false',
+      type: 'boolean',
+      description: 'System maintenance mode',
+      isPublic: true
+    }
+  ]
+
+  for (const config of systemConfigs) {
+    await prisma.systemConfig.upsert({
+      where: { key: config.key },
+      update: {},
+      create: {
+        ...config,
+        lastModifiedBy: 'system' // This will be updated when actual admin user is created
+      }
+    })
   }
-}
 
-createDatabase();
+  // Feature flags
+  const featureFlags = [
+    {
+      name: 'AI Website Generation',
+      key: 'ai_website_generation',
+      description: 'Enable AI-powered website generation',
+      isEnabled: true
+    },
+    {
+      name: 'Mobile App Generation',
+      key: 'mobile_app_generation',
+      description: 'Enable React Native mobile app generation',
+      isEnabled: true
+    },
+    {
+      name: 'Custom Domains',
+      key: 'custom_domains',
+      description: 'Allow custom domain configuration',
+      isEnabled: false
+    },
+    {
+      name: 'Marketplace',
+      key: 'marketplace',
+      description: 'Enable marketplace for themes and plugins',
+      isEnabled: true
+    },
+    {
+      name: 'Advanced Analytics',
+      key: 'advanced_analytics',
+      description: 'Enable advanced analytics dashboard',
+      isEnabled: true
+    }
+  ]
+
+  for (const flag of featureFlags) {
+    await prisma.featureFlag.upsert({
+      where: { key: flag.key },
+      update: {},
+      create: flag
+    })
+  }
+
+  // Sample announcements
+  await prisma.announcement.upsert({
+    where: { id: 'welcome-announcement' },
+    update: {},
+    create: {
+      id: 'welcome-announcement',
+      title: 'Welcome to Advanced Website Builder!',
+      content: 'Start building amazing websites with our AI-powered platform. Explore templates, create funnels, and manage your digital presence.',
+      type: 'info',
+      priority: 'normal',
+      targetType: 'all',
+      isPublished: true
+    }
+  })
+
+  console.log('✅ Database setup completed successfully!')
+} catch (error) {
+  console.error('❌ Database setup failed:', error)
+} finally {
+  await prisma.$disconnect()
+}
 
 const { PrismaClient } = require('@prisma/client');
 

@@ -1135,3 +1135,655 @@ export const updateTemplateUsage = async (templateId: string) => {
   })
   return response
 }
+
+// Admin User Management
+export const createAdminUser = async (userId: string, permissions: string[], isSuperAdmin = false) => {
+  const response = await db.adminUser.create({
+    data: {
+      userId,
+      permissions: JSON.stringify(permissions),
+      isSuperAdmin,
+    },
+    include: {
+      User: true,
+    },
+  })
+  return response
+}
+
+export const getAdminUser = async (userId: string) => {
+  const response = await db.adminUser.findUnique({
+    where: { userId },
+    include: {
+      User: true,
+    },
+  })
+  return response
+}
+
+export const updateAdminPermissions = async (adminUserId: string, permissions: string[]) => {
+  const response = await db.adminUser.update({
+    where: { id: adminUserId },
+    data: {
+      permissions: JSON.stringify(permissions),
+    },
+  })
+  return response
+}
+
+// Audit Logging
+export const createAuditLog = async (
+  adminUserId: string,
+  action: string,
+  entity: string,
+  entityId?: string,
+  oldValues?: any,
+  newValues?: any,
+  ipAddress?: string,
+  userAgent?: string
+) => {
+  const response = await db.auditLog.create({
+    data: {
+      adminUserId,
+      action,
+      entity,
+      entityId,
+      oldValues: oldValues ? JSON.stringify(oldValues) : null,
+      newValues: newValues ? JSON.stringify(newValues) : null,
+      ipAddress,
+      userAgent,
+    },
+  })
+  return response
+}
+
+export const getAuditLogs = async (filters?: {
+  entity?: string
+  adminUserId?: string
+  dateFrom?: Date
+  dateTo?: Date
+  limit?: number
+}) => {
+  const where: any = {}
+  
+  if (filters?.entity) where.entity = filters.entity
+  if (filters?.adminUserId) where.adminUserId = filters.adminUserId
+  if (filters?.dateFrom || filters?.dateTo) {
+    where.createdAt = {}
+    if (filters.dateFrom) where.createdAt.gte = filters.dateFrom
+    if (filters.dateTo) where.createdAt.lte = filters.dateTo
+  }
+
+  const response = await db.auditLog.findMany({
+    where,
+    include: {
+      AdminUser: {
+        include: {
+          User: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: filters?.limit || 100,
+  })
+  return response
+}
+
+// System Configuration
+export const getSystemConfig = async (key?: string) => {
+  if (key) {
+    return await db.systemConfig.findUnique({
+      where: { key },
+      include: {
+        AdminUser: {
+          include: { User: true },
+        },
+      },
+    })
+  }
+  
+  return await db.systemConfig.findMany({
+    include: {
+      AdminUser: {
+        include: { User: true },
+      },
+    },
+    orderBy: { key: 'asc' },
+  })
+}
+
+export const updateSystemConfig = async (
+  key: string,
+  value: string,
+  adminUserId: string,
+  type = 'string',
+  description?: string,
+  isPublic = false
+) => {
+  const response = await db.systemConfig.upsert({
+    where: { key },
+    update: {
+      value,
+      type,
+      description,
+      isPublic,
+      lastModifiedBy: adminUserId,
+    },
+    create: {
+      key,
+      value,
+      type,
+      description,
+      isPublic,
+      lastModifiedBy: adminUserId,
+    },
+  })
+  return response
+}
+
+// Feature Flags
+export const getFeatureFlags = async () => {
+  return await db.featureFlag.findMany({
+    orderBy: { name: 'asc' },
+  })
+}
+
+export const updateFeatureFlag = async (
+  id: string,
+  data: {
+    isEnabled?: boolean
+    rolloutType?: string
+    rolloutData?: any
+  }
+) => {
+  const response = await db.featureFlag.update({
+    where: { id },
+    data: {
+      ...data,
+      rolloutData: data.rolloutData ? JSON.stringify(data.rolloutData) : undefined,
+    },
+  })
+  return response
+}
+
+export const createFeatureFlag = async (
+  name: string,
+  key: string,
+  description?: string,
+  isEnabled = false
+) => {
+  const response = await db.featureFlag.create({
+    data: {
+      name,
+      key,
+      description,
+      isEnabled,
+    },
+  })
+  return response
+}
+
+// API Key Management
+export const createApiKey = async (
+  name: string,
+  permissions: string[],
+  agencyId?: string,
+  subAccountId?: string,
+  expiresAt?: Date
+) => {
+  const keyValue = generateApiKey()
+  const keyHash = await hashApiKey(keyValue)
+  const keyPrefix = keyValue.substring(0, 8)
+
+  const response = await db.apiKey.create({
+    data: {
+      name,
+      keyHash,
+      keyPrefix,
+      permissions: JSON.stringify(permissions),
+      agencyId,
+      subAccountId,
+      expiresAt,
+    },
+  })
+  
+  return { ...response, keyValue } // Return the plain key only once
+}
+
+export const getApiKeys = async (agencyId?: string, subAccountId?: string) => {
+  const where: any = { isActive: true }
+  if (agencyId) where.agencyId = agencyId
+  if (subAccountId) where.subAccountId = subAccountId
+
+  return await db.apiKey.findMany({
+    where,
+    include: {
+      Agency: true,
+      SubAccount: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export const revokeApiKey = async (keyId: string) => {
+  return await db.apiKey.update({
+    where: { id: keyId },
+    data: { isActive: false },
+  })
+}
+
+// Usage Metrics
+export const recordUsageMetric = async (
+  metricType: string,
+  value: number,
+  unit: string,
+  agencyId?: string,
+  subAccountId?: string,
+  metadata?: any
+) => {
+  const response = await db.usageMetric.create({
+    data: {
+      metricType,
+      value,
+      unit,
+      agencyId,
+      subAccountId,
+      metadata: metadata ? JSON.stringify(metadata) : null,
+    },
+  })
+  return response
+}
+
+export const getUsageMetrics = async (
+  metricType?: string,
+  agencyId?: string,
+  subAccountId?: string,
+  dateFrom?: Date,
+  dateTo?: Date
+) => {
+  const where: any = {}
+  
+  if (metricType) where.metricType = metricType
+  if (agencyId) where.agencyId = agencyId
+  if (subAccountId) where.subAccountId = subAccountId
+  if (dateFrom || dateTo) {
+    where.date = {}
+    if (dateFrom) where.date.gte = dateFrom
+    if (dateTo) where.date.lte = dateTo
+  }
+
+  return await db.usageMetric.findMany({
+    where,
+    include: {
+      Agency: true,
+      SubAccount: true,
+    },
+    orderBy: { date: 'desc' },
+  })
+}
+
+// Platform Analytics
+export const updatePlatformAnalytics = async (data: {
+  totalUsers?: number
+  totalAgencies?: number
+  totalSubAccounts?: number
+  totalRevenue?: number
+  activeUsers?: number
+  apiCalls?: number
+  storageUsed?: bigint
+  bandwidth?: bigint
+  metadata?: any
+}) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  return await db.platformAnalytics.upsert({
+    where: { date: today },
+    update: {
+      ...data,
+      metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
+    },
+    create: {
+      date: today,
+      ...data,
+      metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
+    },
+  })
+}
+
+export const getPlatformAnalytics = async (dateFrom?: Date, dateTo?: Date) => {
+  const where: any = {}
+  
+  if (dateFrom || dateTo) {
+    where.date = {}
+    if (dateFrom) where.date.gte = dateFrom
+    if (dateTo) where.date.lte = dateTo
+  }
+
+  return await db.platformAnalytics.findMany({
+    where,
+    orderBy: { date: 'desc' },
+  })
+}
+
+// Admin User Management
+export const getAllUsers = async (filters?: {
+  role?: Role
+  isActive?: boolean
+  agencyId?: string
+  search?: string
+}) => {
+  const where: any = {}
+  
+  if (filters?.role) where.role = filters.role
+  if (filters?.isActive !== undefined) where.isActive = filters.isActive
+  if (filters?.agencyId) where.agencyId = filters.agencyId
+  if (filters?.search) {
+    where.OR = [
+      { name: { contains: filters.search } },
+      { email: { contains: filters.search } },
+    ]
+  }
+
+  return await db.user.findMany({
+    where,
+    include: {
+      Agency: true,
+      Permissions: {
+        include: {
+          SubAccount: true,
+        },
+      },
+      AdminUser: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export const getAllAgencies = async (filters?: {
+  isActive?: boolean
+  search?: string
+}) => {
+  const where: any = {}
+  
+  if (filters?.isActive !== undefined) where.isActive = filters.isActive
+  if (filters?.search) {
+    where.OR = [
+      { name: { contains: filters.search } },
+      { companyEmail: { contains: filters.search } },
+    ]
+  }
+
+  return await db.agency.findMany({
+    where,
+    include: {
+      users: true,
+      SubAccount: true,
+      Subscription: true,
+      _count: {
+        select: {
+          users: true,
+          SubAccount: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export const suspendUser = async (userId: string, adminUserId: string) => {
+  const oldUser = await db.user.findUnique({ where: { id: userId } })
+  
+  const response = await db.user.update({
+    where: { id: userId },
+    data: { isActive: false },
+  })
+
+  await createAuditLog(
+    adminUserId,
+    'SUSPEND_USER',
+    'User',
+    userId,
+    { isActive: oldUser?.isActive },
+    { isActive: false }
+  )
+
+  return response
+}
+
+export const activateUser = async (userId: string, adminUserId: string) => {
+  const oldUser = await db.user.findUnique({ where: { id: userId } })
+  
+  const response = await db.user.update({
+    where: { id: userId },
+    data: { isActive: true },
+  })
+
+  await createAuditLog(
+    adminUserId,
+    'ACTIVATE_USER',
+    'User',
+    userId,
+    { isActive: oldUser?.isActive },
+    { isActive: true }
+  )
+
+  return response
+}
+
+export const suspendAgency = async (agencyId: string, adminUserId: string) => {
+  const oldAgency = await db.agency.findUnique({ where: { id: agencyId } })
+  
+  const response = await db.agency.update({
+    where: { id: agencyId },
+    data: { isActive: false },
+  })
+
+  await createAuditLog(
+    adminUserId,
+    'SUSPEND_AGENCY',
+    'Agency',
+    agencyId,
+    { isActive: oldAgency?.isActive },
+    { isActive: false }
+  )
+
+  return response
+}
+
+// Support Tickets
+export const createSupportTicket = async (
+  title: string,
+  description: string,
+  userId: string,
+  agencyId?: string,
+  subAccountId?: string,
+  priority = 'medium',
+  category = 'general'
+) => {
+  return await db.supportTicket.create({
+    data: {
+      title,
+      description,
+      userId,
+      agencyId,
+      subAccountId,
+      priority,
+      category,
+    },
+    include: {
+      User: true,
+      Agency: true,
+      SubAccount: true,
+    },
+  })
+}
+
+export const getSupportTickets = async (filters?: {
+  status?: string
+  priority?: string
+  category?: string
+  assignedTo?: string
+  userId?: string
+  agencyId?: string
+}) => {
+  const where: any = {}
+  
+  if (filters?.status) where.status = filters.status
+  if (filters?.priority) where.priority = filters.priority
+  if (filters?.category) where.category = filters.category
+  if (filters?.assignedTo) where.assignedTo = filters.assignedTo
+  if (filters?.userId) where.userId = filters.userId
+  if (filters?.agencyId) where.agencyId = filters.agencyId
+
+  return await db.supportTicket.findMany({
+    where,
+    include: {
+      User: true,
+      Agency: true,
+      SubAccount: true,
+      AssignedUser: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export const updateSupportTicket = async (
+  ticketId: string,
+  data: {
+    status?: string
+    priority?: string
+    assignedTo?: string
+    resolution?: string
+  }
+) => {
+  return await db.supportTicket.update({
+    where: { id: ticketId },
+    data,
+    include: {
+      User: true,
+      Agency: true,
+      SubAccount: true,
+      AssignedUser: true,
+    },
+  })
+}
+
+// Announcements
+export const createAnnouncement = async (
+  title: string,
+  content: string,
+  type = 'info',
+  priority = 'normal',
+  targetType = 'all',
+  targetIds?: string[],
+  publishAt?: Date,
+  expiresAt?: Date
+) => {
+  return await db.announcement.create({
+    data: {
+      title,
+      content,
+      type,
+      priority,
+      targetType,
+      targetIds: targetIds ? JSON.stringify(targetIds) : null,
+      publishAt,
+      expiresAt,
+      isPublished: publishAt ? publishAt <= new Date() : true,
+    },
+  })
+}
+
+export const getAnnouncements = async (
+  targetType?: string,
+  targetId?: string
+) => {
+  const where: any = {
+    isPublished: true,
+    OR: [
+      { expiresAt: null },
+      { expiresAt: { gt: new Date() } },
+    ],
+  }
+
+  if (targetType && targetId) {
+    where.OR = [
+      { targetType: 'all' },
+      {
+        AND: [
+          { targetType },
+          { targetIds: { contains: targetId } },
+        ],
+      },
+    ]
+  }
+
+  return await db.announcement.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+// Backup Management
+export const createBackupJob = async (
+  name: string,
+  type: string,
+  targetType: string,
+  targetIds?: string[],
+  scheduledAt?: Date
+) => {
+  return await db.backupJob.create({
+    data: {
+      name,
+      type,
+      targetType,
+      targetIds: targetIds ? JSON.stringify(targetIds) : null,
+      scheduledAt,
+    },
+  })
+}
+
+export const getBackupJobs = async (status?: string) => {
+  const where: any = {}
+  if (status) where.status = status
+
+  return await db.backupJob.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export const updateBackupJob = async (
+  jobId: string,
+  data: {
+    status?: string
+    progress?: number
+    size?: bigint
+    location?: string
+    errorLog?: string
+    startedAt?: Date
+    completedAt?: Date
+  }
+) => {
+  return await db.backupJob.update({
+    where: { id: jobId },
+    data,
+  })
+}
+
+// Helper functions for API keys
+function generateApiKey(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = 'sk_'
+  for (let i = 0; i < 48; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
+async function hashApiKey(key: string): Promise<string> {
+  // In a real implementation, use bcrypt or similar
+  const crypto = require('crypto')
+  return crypto.createHash('sha256').update(key).digest('hex')
+}
