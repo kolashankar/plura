@@ -1,8 +1,9 @@
-'use server'
+"use server";
 
-import { clerkClient, currentUser } from '@clerk/nextjs'
-import { db } from './db'
-import { redirect } from 'next/navigation'
+import { clerkClient } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
+import { db } from "./db";
+import { redirect } from "next/navigation";
 import {
   Agency,
   Lane,
@@ -13,20 +14,20 @@ import {
   Tag,
   Ticket,
   User,
-} from '@prisma/client'
-import { v4 } from 'uuid'
+} from "@prisma/client";
+import { v4 } from "uuid";
 import {
   CreateFunnelFormSchema,
   CreateMediaType,
   UpsertFunnelPage,
-} from './types'
-import { z } from 'zod'
-import { revalidatePath } from 'next/cache'
+} from "./types";
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 export const getAuthUserDetails = async () => {
-  const user = await currentUser()
+  const user = await currentUser();
   if (!user) {
-    return
+    return;
   }
 
   const userData = await db.user.findUnique({
@@ -46,22 +47,22 @@ export const getAuthUserDetails = async () => {
       },
       Permissions: true,
     },
-  })
+  });
 
-  return userData
-}
+  return userData;
+};
 
 export const saveActivityLogsNotification = async ({
   agencyId,
   description,
   subaccountId,
 }: {
-  agencyId?: string
-  description: string
-  subaccountId?: string
+  agencyId?: string;
+  description: string;
+  subaccountId?: string;
 }) => {
-  const authUser = await currentUser()
-  let userData
+  const authUser = await currentUser();
+  let userData;
   if (!authUser) {
     const response = await db.user.findFirst({
       where: {
@@ -71,32 +72,32 @@ export const saveActivityLogsNotification = async ({
           },
         },
       },
-    })
+    });
     if (response) {
-      userData = response
+      userData = response;
     }
   } else {
     userData = await db.user.findUnique({
       where: { email: authUser?.emailAddresses[0].emailAddress },
-    })
+    });
   }
 
   if (!userData) {
-    console.log('Could not find a user')
-    return
+    console.log("Could not find a user");
+    return;
   }
 
-  let foundAgencyId = agencyId
+  let foundAgencyId = agencyId;
   if (!foundAgencyId) {
     if (!subaccountId) {
       throw new Error(
-        'You need to provide atleast an agency Id or subaccount Id'
-      )
+        "You need to provide atleast an agency Id or subaccount Id",
+      );
     }
     const response = await db.subAccount.findUnique({
       where: { id: subaccountId },
-    })
-    if (response) foundAgencyId = response.agencyId
+    });
+    if (response) foundAgencyId = response.agencyId;
   }
   if (subaccountId) {
     await db.notification.create({
@@ -116,7 +117,7 @@ export const saveActivityLogsNotification = async ({
           connect: { id: subaccountId },
         },
       },
-    })
+    });
   } else {
     await db.notification.create({
       data: {
@@ -132,25 +133,25 @@ export const saveActivityLogsNotification = async ({
           },
         },
       },
-    })
+    });
   }
-}
+};
 
 export const createTeamUser = async (agencyId: string, user: User) => {
-  if (user.role === 'AGENCY_OWNER') return null
-  const response = await db.user.create({ data: { ...user } })
-  return response
-}
+  if (user.role === "AGENCY_OWNER") return null;
+  const response = await db.user.create({ data: { ...user } });
+  return response;
+};
 
 export const verifyAndAcceptInvitation = async () => {
-  const user = await currentUser()
-  if (!user) return redirect('/sign-in')
+  const user = await currentUser();
+  if (!user) return redirect("/sign-in");
   const invitationExists = await db.invitation.findUnique({
     where: {
       email: user.emailAddresses[0].emailAddress,
-      status: 'PENDING',
+      status: "PENDING",
     },
-  })
+  });
 
   if (invitationExists) {
     const userDetails = await createTeamUser(invitationExists.agencyId, {
@@ -162,58 +163,58 @@ export const verifyAndAcceptInvitation = async () => {
       role: invitationExists.role,
       createdAt: new Date(),
       updatedAt: new Date(),
-      plan: 'STARTER',
+      plan: "STARTER",
       isActive: true,
       lastLoginAt: null,
-    })
+    });
     await saveActivityLogsNotification({
       agencyId: invitationExists?.agencyId,
       description: `Joined`,
       subaccountId: undefined,
-    })
+    });
 
     if (userDetails) {
       await clerkClient.users.updateUserMetadata(user.id, {
         privateMetadata: {
-          role: userDetails.role || 'SUBACCOUNT_USER',
+          role: userDetails.role || "SUBACCOUNT_USER",
         },
-      })
+      });
 
       await db.invitation.delete({
         where: { email: userDetails.email },
-      })
+      });
 
-      return userDetails.agencyId
-    } else return null
+      return userDetails.agencyId;
+    } else return null;
   } else {
     const agency = await db.user.findUnique({
       where: {
         email: user.emailAddresses[0].emailAddress,
       },
-    })
-    return agency ? agency.agencyId : null
+    });
+    return agency ? agency.agencyId : null;
   }
-}
+};
 
 export const updateAgencyDetails = async (
   agencyId: string,
-  agencyDetails: Partial<Agency>
+  agencyDetails: Partial<Agency>,
 ) => {
   const response = await db.agency.update({
     where: { id: agencyId },
     data: { ...agencyDetails },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const deleteAgency = async (agencyId: string) => {
-  const response = await db.agency.delete({ where: { id: agencyId } })
-  return response
-}
+  const response = await db.agency.delete({ where: { id: agencyId } });
+  return response;
+};
 
 export const initUser = async (newUser: Partial<User>) => {
-  const user = await currentUser()
-  if (!user) return
+  const user = await currentUser();
+  if (!user) return;
 
   const userData = await db.user.upsert({
     where: {
@@ -225,21 +226,21 @@ export const initUser = async (newUser: Partial<User>) => {
       avatarUrl: user.imageUrl,
       email: user.emailAddresses[0].emailAddress,
       name: `${user.firstName} ${user.lastName}`,
-      role: newUser.role || 'SUBACCOUNT_USER',
+      role: newUser.role || "SUBACCOUNT_USER",
     },
-  })
+  });
 
   await clerkClient.users.updateUserMetadata(user.id, {
     privateMetadata: {
-      role: newUser.role || 'SUBACCOUNT_USER',
+      role: newUser.role || "SUBACCOUNT_USER",
     },
-  })
+  });
 
-  return userData
-}
+  return userData;
+};
 
 export const upsertAgency = async (agency: Agency, price?: Plan) => {
-  if (!agency.companyEmail) return null
+  if (!agency.companyEmail) return null;
   try {
     const agencyDetails = await db.agency.upsert({
       where: {
@@ -254,44 +255,44 @@ export const upsertAgency = async (agency: Agency, price?: Plan) => {
         SidebarOption: {
           create: [
             {
-              name: 'Dashboard',
-              icon: 'category',
+              name: "Dashboard",
+              icon: "category",
               link: `/agency/${agency.id}`,
             },
             {
-              name: 'Launchpad',
-              icon: 'clipboardIcon',
+              name: "Launchpad",
+              icon: "clipboardIcon",
               link: `/agency/${agency.id}/launchpad`,
             },
             {
-              name: 'Billing',
-              icon: 'payment',
+              name: "Billing",
+              icon: "payment",
               link: `/agency/${agency.id}/billing`,
             },
             {
-              name: 'Settings',
-              icon: 'settings',
+              name: "Settings",
+              icon: "settings",
               link: `/agency/${agency.id}/settings`,
             },
             {
-              name: 'Sub Accounts',
-              icon: 'person',
+              name: "Sub Accounts",
+              icon: "person",
               link: `/agency/${agency.id}/all-subaccounts`,
             },
             {
-              name: 'Team',
-              icon: 'shield',
+              name: "Team",
+              icon: "shield",
               link: `/agency/${agency.id}/team`,
             },
           ],
         },
       },
-    })
-    return agencyDetails
+    });
+    return agencyDetails;
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-}
+};
 
 export const getNotificationAndUser = async (agencyId: string) => {
   try {
@@ -299,27 +300,27 @@ export const getNotificationAndUser = async (agencyId: string) => {
       where: { agencyId },
       include: { User: true },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
-    })
-    return response
+    });
+    return response;
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-}
+};
 
 export const upsertSubAccount = async (subAccount: SubAccount) => {
-  if (!subAccount.companyEmail) return null
+  if (!subAccount.companyEmail) return null;
   const agencyOwner = await db.user.findFirst({
     where: {
       Agency: {
         id: subAccount.agencyId,
       },
-      role: 'AGENCY_OWNER',
+      role: "AGENCY_OWNER",
     },
-  })
-  if (!agencyOwner) return console.log('🔴Erorr could not create subaccount')
-  const permissionId = v4()
+  });
+  if (!agencyOwner) return console.log("🔴Erorr could not create subaccount");
+  const permissionId = v4();
   const response = await db.subAccount.upsert({
     where: { id: subAccount.id },
     update: subAccount,
@@ -337,86 +338,86 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
         },
       },
       Pipeline: {
-        create: { name: 'Lead Cycle' },
+        create: { name: "Lead Cycle" },
       },
       SidebarOption: {
         create: [
           {
-            name: 'Launchpad',
-            icon: 'clipboardIcon',
+            name: "Launchpad",
+            icon: "clipboardIcon",
             link: `/subaccount/${subAccount.id}/launchpad`,
           },
           {
-            name: 'Settings',
-            icon: 'settings',
+            name: "Settings",
+            icon: "settings",
             link: `/subaccount/${subAccount.id}/settings`,
           },
           {
-            name: 'Funnels',
-            icon: 'pipelines',
+            name: "Funnels",
+            icon: "pipelines",
             link: `/subaccount/${subAccount.id}/funnels`,
           },
           {
-            name: 'Media',
-            icon: 'database',
+            name: "Media",
+            icon: "database",
             link: `/subaccount/${subAccount.id}/media`,
           },
           {
-            name: 'Automations',
-            icon: 'chip',
+            name: "Automations",
+            icon: "chip",
             link: `/subaccount/${subAccount.id}/automations`,
           },
           {
-            name: 'Pipelines',
-            icon: 'flag',
+            name: "Pipelines",
+            icon: "flag",
             link: `/subaccount/${subAccount.id}/pipelines`,
           },
           {
-            name: 'Contacts',
-            icon: 'person',
+            name: "Contacts",
+            icon: "person",
             link: `/subaccount/${subAccount.id}/contacts`,
           },
           {
-            name: 'Dashboard',
-            icon: 'category',
+            name: "Dashboard",
+            icon: "category",
             link: `/subaccount/${subAccount.id}`,
           },
         ],
       },
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getUserPermissions = async (userId: string) => {
   const response = await db.user.findUnique({
     where: { id: userId },
     select: { Permissions: { include: { SubAccount: true } } },
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const updateUser = async (user: Partial<User>) => {
   const response = await db.user.update({
     where: { email: user.email },
     data: { ...user },
-  })
+  });
 
   await clerkClient.users.updateUserMetadata(response.id, {
     privateMetadata: {
-      role: user.role || 'SUBACCOUNT_USER',
+      role: user.role || "SUBACCOUNT_USER",
     },
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const changeUserPermissions = async (
   permissionId: string | undefined,
   userEmail: string,
   subAccountId: string,
-  permission: boolean
+  permission: boolean,
 ) => {
   try {
     const response = await db.permissions.upsert({
@@ -427,60 +428,60 @@ export const changeUserPermissions = async (
         email: userEmail,
         subAccountId: subAccountId,
       },
-    })
-    return response
+    });
+    return response;
   } catch (error) {
-    console.log('🔴Could not change persmission', error)
+    console.log("🔴Could not change persmission", error);
   }
-}
+};
 
 export const getSubaccountDetails = async (subaccountId: string) => {
   const response = await db.subAccount.findUnique({
     where: {
       id: subaccountId,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const deleteSubAccount = async (subaccountId: string) => {
   const response = await db.subAccount.delete({
     where: {
       id: subaccountId,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const deleteUser = async (userId: string) => {
   await clerkClient.users.updateUserMetadata(userId, {
     privateMetadata: {
       role: undefined,
     },
-  })
-  const deletedUser = await db.user.delete({ where: { id: userId } })
+  });
+  const deletedUser = await db.user.delete({ where: { id: userId } });
 
-  return deletedUser
-}
+  return deletedUser;
+};
 
 export const getUser = async (id: string) => {
   const user = await db.user.findUnique({
     where: {
       id,
     },
-  })
+  });
 
-  return user
-}
+  return user;
+};
 
 export const sendInvitation = async (
   role: Role,
   email: string,
-  agencyId: string
+  agencyId: string,
 ) => {
   const resposne = await db.invitation.create({
     data: { email, agencyId, role },
-  })
+  });
 
   try {
     const invitation = await clerkClient.invitations.createInvitation({
@@ -490,14 +491,14 @@ export const sendInvitation = async (
         throughInvitation: true,
         role,
       },
-    })
+    });
   } catch (error) {
-    console.log(error)
-    throw error
+    console.log(error);
+    throw error;
   }
 
-  return resposne
-}
+  return resposne;
+};
 
 export const getMedia = async (subaccountId: string) => {
   const mediafiles = await db.subAccount.findUnique({
@@ -505,13 +506,13 @@ export const getMedia = async (subaccountId: string) => {
       id: subaccountId,
     },
     include: { Media: true },
-  })
-  return mediafiles
-}
+  });
+  return mediafiles;
+};
 
 export const createMedia = async (
   subaccountId: string,
-  mediaFile: CreateMediaType
+  mediaFile: CreateMediaType,
 ) => {
   const response = await db.media.create({
     data: {
@@ -519,39 +520,39 @@ export const createMedia = async (
       name: mediaFile.name,
       subAccountId: subaccountId,
     },
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const deleteMedia = async (mediaId: string) => {
   const response = await db.media.delete({
     where: {
       id: mediaId,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getPipelineDetails = async (pipelineId: string) => {
   const response = await db.pipeline.findUnique({
     where: {
       id: pipelineId,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getLanesWithTicketAndTags = async (pipelineId: string) => {
   const response = await db.lane.findMany({
     where: {
       pipelineId,
     },
-    orderBy: { order: 'asc' },
+    orderBy: { order: "asc" },
     include: {
       Tickets: {
         orderBy: {
-          order: 'asc',
+          order: "asc",
         },
         include: {
           Tags: true,
@@ -560,14 +561,14 @@ export const getLanesWithTicketAndTags = async (pipelineId: string) => {
         },
       },
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const upsertFunnel = async (
   subaccountId: string,
   funnel: z.infer<typeof CreateFunnelFormSchema> & { liveProducts: string },
-  funnelId: string
+  funnelId: string,
 ) => {
   const response = await db.funnel.upsert({
     where: { id: funnelId },
@@ -577,29 +578,29 @@ export const upsertFunnel = async (
       id: funnelId || v4(),
       subAccountId: subaccountId,
     },
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const upsertPipeline = async (
-  pipeline: Prisma.PipelineUncheckedCreateWithoutLaneInput
+  pipeline: Prisma.PipelineUncheckedCreateWithoutLaneInput,
 ) => {
   const response = await db.pipeline.upsert({
     where: { id: pipeline.id || v4() },
     update: pipeline,
     create: pipeline,
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const deletePipeline = async (pipelineId: string) => {
   const response = await db.pipeline.delete({
     where: { id: pipelineId },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const updateLanesOrder = async (lanes: Lane[]) => {
   try {
@@ -611,15 +612,15 @@ export const updateLanesOrder = async (lanes: Lane[]) => {
         data: {
           order: lane.order,
         },
-      })
-    )
+      }),
+    );
 
-    await db.$transaction(updateTrans)
-    console.log('🟢 Done reordered 🟢')
+    await db.$transaction(updateTrans);
+    console.log("🟢 Done reordered 🟢");
   } catch (error) {
-    console.log(error, 'ERROR UPDATE LANES ORDER')
+    console.log(error, "ERROR UPDATE LANES ORDER");
   }
-}
+};
 
 export const updateTicketsOrder = async (tickets: Ticket[]) => {
   try {
@@ -632,44 +633,44 @@ export const updateTicketsOrder = async (tickets: Ticket[]) => {
           order: ticket.order,
           laneId: ticket.laneId,
         },
-      })
-    )
+      }),
+    );
 
-    await db.$transaction(updateTrans)
-    console.log('🟢 Done reordered 🟢')
+    await db.$transaction(updateTrans);
+    console.log("🟢 Done reordered 🟢");
   } catch (error) {
-    console.log(error, '🔴 ERROR UPDATE TICKET ORDER')
+    console.log(error, "🔴 ERROR UPDATE TICKET ORDER");
   }
-}
+};
 
 export const upsertLane = async (lane: Prisma.LaneUncheckedCreateInput) => {
-  let order: number
+  let order: number;
 
   if (!lane.order) {
     const lanes = await db.lane.findMany({
       where: {
         pipelineId: lane.pipelineId,
       },
-    })
+    });
 
-    order = lanes.length
+    order = lanes.length;
   } else {
-    order = lane.order
+    order = lane.order;
   }
 
   const response = await db.lane.upsert({
     where: { id: lane.id || v4() },
     update: lane,
     create: { ...lane, order },
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const deleteLane = async (laneId: string) => {
-  const resposne = await db.lane.delete({ where: { id: laneId } })
-  return resposne
-}
+  const resposne = await db.lane.delete({ where: { id: laneId } });
+  return resposne;
+};
 
 export const getTicketsWithTags = async (pipelineId: string) => {
   const response = await db.ticket.findMany({
@@ -679,9 +680,9 @@ export const getTicketsWithTags = async (pipelineId: string) => {
       },
     },
     include: { Tags: true, Assigned: true, Customer: true },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const _getTicketsWithAllRelations = async (laneId: string) => {
   const response = await db.ticket.findMany({
@@ -692,9 +693,9 @@ export const _getTicketsWithAllRelations = async (laneId: string) => {
       Lane: true,
       Tags: true,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getSubAccountTeamMembers = async (subaccountId: string) => {
   const subaccountUsersWithAccess = await db.user.findMany({
@@ -706,7 +707,7 @@ export const getSubAccountTeamMembers = async (subaccountId: string) => {
           },
         },
       },
-      role: 'SUBACCOUNT_USER',
+      role: "SUBACCOUNT_USER",
       Permissions: {
         some: {
           subAccountId: subaccountId,
@@ -714,9 +715,9 @@ export const getSubAccountTeamMembers = async (subaccountId: string) => {
         },
       },
     },
-  })
-  return subaccountUsersWithAccess
-}
+  });
+  return subaccountUsersWithAccess;
+};
 
 export const searchContacts = async (searchTerms: string) => {
   const response = await db.contact.findMany({
@@ -725,22 +726,22 @@ export const searchContacts = async (searchTerms: string) => {
         contains: searchTerms,
       },
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const upsertTicket = async (
   ticket: Prisma.TicketUncheckedCreateInput,
-  tags: Tag[]
+  tags: Tag[],
 ) => {
-  let order: number
+  let order: number;
   if (!ticket.order) {
     const tickets = await db.ticket.findMany({
       where: { laneId: ticket.laneId },
-    })
-    order = tickets.length
+    });
+    order = tickets.length;
   } else {
-    order = ticket.order
+    order = ticket.order;
   }
 
   const response = await db.ticket.upsert({
@@ -755,66 +756,66 @@ export const upsertTicket = async (
       Tags: true,
       Lane: true,
     },
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const deleteTicket = async (ticketId: string) => {
   const response = await db.ticket.delete({
     where: {
       id: ticketId,
     },
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const upsertTag = async (
   subaccountId: string,
-  tag: Prisma.TagUncheckedCreateInput
+  tag: Prisma.TagUncheckedCreateInput,
 ) => {
   const response = await db.tag.upsert({
     where: { id: tag.id || v4(), subAccountId: subaccountId },
     update: tag,
     create: { ...tag, subAccountId: subaccountId },
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const getTagsForSubaccount = async (subaccountId: string) => {
   const response = await db.subAccount.findUnique({
     where: { id: subaccountId },
     select: { Tags: true },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const deleteTag = async (tagId: string) => {
-  const response = await db.tag.delete({ where: { id: tagId } })
-  return response
-}
+  const response = await db.tag.delete({ where: { id: tagId } });
+  return response;
+};
 
 export const upsertContact = async (
-  contact: Prisma.ContactUncheckedCreateInput
+  contact: Prisma.ContactUncheckedCreateInput,
 ) => {
   const response = await db.contact.upsert({
     where: { id: contact.id || v4() },
     update: contact,
     create: contact,
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getFunnels = async (subacountId: string) => {
   const funnels = await db.funnel.findMany({
     where: { subAccountId: subacountId },
     include: { FunnelPages: true },
-  })
+  });
 
-  return funnels
-}
+  return funnels;
+};
 
 export const getFunnel = async (funnelId: string) => {
   const funnel = await db.funnel.findUnique({
@@ -822,34 +823,34 @@ export const getFunnel = async (funnelId: string) => {
     include: {
       FunnelPages: {
         orderBy: {
-          order: 'asc',
+          order: "asc",
         },
       },
     },
-  })
+  });
 
-  return funnel
-}
+  return funnel;
+};
 
 export const updateFunnelProducts = async (
   products: string,
-  funnelId: string
+  funnelId: string,
 ) => {
   const data = await db.funnel.update({
     where: { id: funnelId },
     data: { liveProducts: products },
-  })
-  return data
-}
+  });
+  return data;
+};
 
 export const upsertFunnelPage = async (
   subaccountId: string,
   funnelPage: UpsertFunnelPage,
-  funnelId: string
+  funnelId: string,
 ) => {
-  if (!subaccountId || !funnelId) return
+  if (!subaccountId || !funnelId) return;
   const response = await db.funnelPage.upsert({
-    where: { id: funnelPage.id || '' },
+    where: { id: funnelPage.id || "" },
     update: { ...funnelPage },
     create: {
       ...funnelPage,
@@ -858,35 +859,35 @@ export const upsertFunnelPage = async (
         : JSON.stringify([
             {
               content: [],
-              id: '__body',
-              name: 'Body',
-              styles: { backgroundColor: 'white' },
-              type: '__body',
+              id: "__body",
+              name: "Body",
+              styles: { backgroundColor: "white" },
+              type: "__body",
             },
           ]),
       funnelId,
     },
-  })
+  });
 
-  revalidatePath(`/subaccount/${subaccountId}/funnels/${funnelId}`, 'page')
-  return response
-}
+  revalidatePath(`/subaccount/${subaccountId}/funnels/${funnelId}`, "page");
+  return response;
+};
 
 export const deleteFunnelePage = async (funnelPageId: string) => {
-  const response = await db.funnelPage.delete({ where: { id: funnelPageId } })
+  const response = await db.funnelPage.delete({ where: { id: funnelPageId } });
 
-  return response
-}
+  return response;
+};
 
 export const getFunnelPageDetails = async (funnelPageId: string) => {
   const response = await db.funnelPage.findUnique({
     where: {
       id: funnelPageId,
     },
-  })
+  });
 
-  return response
-}
+  return response;
+};
 
 export const getDomainContent = async (subDomainName: string) => {
   const response = await db.funnel.findUnique({
@@ -894,9 +895,9 @@ export const getDomainContent = async (subDomainName: string) => {
       subDomainName,
     },
     include: { FunnelPages: true },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getPipelines = async (subaccountId: string) => {
   const response = await db.pipeline.findMany({
@@ -906,145 +907,145 @@ export const getPipelines = async (subaccountId: string) => {
         include: { Tickets: true },
       },
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getCustomComponents = async (subaccountId: string) => {
   const response = await db.customComponent.findMany({
     where: { subAccountId: subaccountId },
-    orderBy: { createdAt: 'desc' },
-  })
-  return response
-}
+    orderBy: { createdAt: "desc" },
+  });
+  return response;
+};
 
 export const createCustomComponent = async (
   subaccountId: string,
   componentData: {
-    name: string
-    type: string
-    content: any
-    styles: any
-    category?: string
-    code: string
-    createdBy: string
-  }
+    name: string;
+    type: string;
+    content: any;
+    styles: any;
+    category?: string;
+    code: string;
+    createdBy: string;
+  },
 ) => {
   const response = await db.customComponent.create({
     data: {
       ...componentData,
       subAccountId: subaccountId,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const updateCustomComponent = async (
   componentId: string,
   componentData: Partial<{
-    name: string
-    type: string
-    content: any
-    styles: any
-    category: string
-    code: string
-    isActive: boolean
-  }>
+    name: string;
+    type: string;
+    content: any;
+    styles: any;
+    category: string;
+    code: string;
+    isActive: boolean;
+  }>,
 ) => {
   const response = await db.customComponent.update({
     where: { id: componentId },
     data: componentData,
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const deleteCustomComponent = async (componentId: string) => {
   const response = await db.customComponent.delete({
     where: { id: componentId },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getDeployments = async (subaccountId: string) => {
   const response = await db.deployment.findMany({
     where: { subAccountId: subaccountId },
-    orderBy: { createdAt: 'desc' },
-  })
-  return response
-}
+    orderBy: { createdAt: "desc" },
+  });
+  return response;
+};
 
 export const createDeployment = async (
   subaccountId: string,
   deploymentData: {
-    name: string
-    type?: string
-    config?: any
-  }
+    name: string;
+    type?: string;
+    config?: any;
+  },
 ) => {
   const response = await db.deployment.create({
     data: {
       ...deploymentData,
       subAccountId: subaccountId,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const updateDeployment = async (
   deploymentId: string,
   deploymentData: Partial<{
-    name: string
-    url: string
-    status: string
-    type: string
-    config: any
-  }>
+    name: string;
+    url: string;
+    status: string;
+    type: string;
+    config: any;
+  }>,
 ) => {
   const response = await db.deployment.update({
     where: { id: deploymentId },
     data: deploymentData,
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const deleteDeployment = async (deploymentId: string) => {
   const response = await db.deployment.delete({
     where: { id: deploymentId },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getDatabases = async (subaccountId: string) => {
   const response = await db.database.findMany({
     where: { subaccountId },
-    orderBy: { createdAt: 'desc' },
-  })
-  return response
-}
+    orderBy: { createdAt: "desc" },
+  });
+  return response;
+};
 
 export const createDatabase = async (
   subaccountId: string,
   databaseData: {
-    name: string
-    provider: string
-    connectionString?: string
-    host?: string
-    port?: number
-    database?: string
-    username?: string
-    password?: string
-    isDefault?: boolean
-  }
+    name: string;
+    provider: string;
+    connectionString?: string;
+    host?: string;
+    port?: number;
+    database?: string;
+    username?: string;
+    password?: string;
+    isDefault?: boolean;
+  },
 ) => {
   // If setting as default, unset other defaults first
   if (databaseData.isDefault) {
     await db.database.updateMany({
-      where: { 
+      where: {
         subaccountId,
-        isDefault: true 
+        isDefault: true,
       },
       data: { isDefault: false },
-    })
+    });
   }
 
   const response = await db.database.create({
@@ -1052,80 +1053,80 @@ export const createDatabase = async (
       ...databaseData,
       subaccountId,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getIntegrations = async (subaccountId: string) => {
   const response = await db.integration.findMany({
     where: { subaccountId },
-    orderBy: { createdAt: 'desc' },
-  })
-  return response
-}
+    orderBy: { createdAt: "desc" },
+  });
+  return response;
+};
 
 export const createIntegration = async (
   subaccountId: string,
   integrationData: {
-    name: string
-    provider: string
-    apiKey?: string
-    apiSecret?: string
-    webhookUrl?: string
-    config?: string
-  }
+    name: string;
+    provider: string;
+    apiKey?: string;
+    apiSecret?: string;
+    webhookUrl?: string;
+    config?: string;
+  },
 ) => {
   const response = await db.integration.create({
     data: {
       ...integrationData,
       subaccountId,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getAITemplates = async () => {
   const response = await db.aITemplate.findMany({
     where: { isActive: true },
-    orderBy: { usageCount: 'desc' },
-  })
-  return response
-}
+    orderBy: { usageCount: "desc" },
+  });
+  return response;
+};
 
 export const createTeamInvitation = async (
   subaccountId: string,
-  invitations: { email: string; role: Role; permissions: string[] }[]
+  invitations: { email: string; role: Role; permissions: string[] }[],
 ) => {
   const responses = await Promise.all(
-    invitations.map(invitation => 
+    invitations.map((invitation) =>
       db.invitation.create({
         data: {
           email: invitation.email,
-          agencyId: '', // Will be set based on subaccount
+          agencyId: "", // Will be set based on subaccount
           role: invitation.role,
-          status: 'PENDING',
-        }
-      })
-    )
-  )
-  return responses
-}
+          status: "PENDING",
+        },
+      }),
+    ),
+  );
+  return responses;
+};
 
 export const getTeamAnalytics = async (subaccountId: string) => {
   const response = await db.user.groupBy({
-    by: ['role'],
+    by: ["role"],
     where: {
       Permissions: {
         some: {
           subAccountId: subaccountId,
-          access: true
-        }
-      }
+          access: true,
+        },
+      },
     },
-    _count: true
-  })
-  return response
-}
+    _count: true,
+  });
+  return response;
+};
 
 export const updateTemplateUsage = async (templateId: string) => {
   const response = await db.aITemplate.update({
@@ -1135,12 +1136,16 @@ export const updateTemplateUsage = async (templateId: string) => {
         increment: 1,
       },
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 // Admin User Management
-export const createAdminUser = async (userId: string, permissions: string[], isSuperAdmin = false) => {
+export const createAdminUser = async (
+  userId: string,
+  permissions: string[],
+  isSuperAdmin = false,
+) => {
   const response = await db.adminUser.create({
     data: {
       userId,
@@ -1150,9 +1155,9 @@ export const createAdminUser = async (userId: string, permissions: string[], isS
     include: {
       User: true,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getAdminUser = async (userId: string) => {
   const response = await db.adminUser.findUnique({
@@ -1160,19 +1165,22 @@ export const getAdminUser = async (userId: string) => {
     include: {
       User: true,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
-export const updateAdminPermissions = async (adminUserId: string, permissions: string[]) => {
+export const updateAdminPermissions = async (
+  adminUserId: string,
+  permissions: string[],
+) => {
   const response = await db.adminUser.update({
     where: { id: adminUserId },
     data: {
       permissions: JSON.stringify(permissions),
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 // Audit Logging
 export const createAuditLog = async (
@@ -1183,7 +1191,7 @@ export const createAuditLog = async (
   oldValues?: any,
   newValues?: any,
   ipAddress?: string,
-  userAgent?: string
+  userAgent?: string,
 ) => {
   const response = await db.auditLog.create({
     data: {
@@ -1196,25 +1204,25 @@ export const createAuditLog = async (
       ipAddress,
       userAgent,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getAuditLogs = async (filters?: {
-  entity?: string
-  adminUserId?: string
-  dateFrom?: Date
-  dateTo?: Date
-  limit?: number
+  entity?: string;
+  adminUserId?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  limit?: number;
 }) => {
-  const where: any = {}
-  
-  if (filters?.entity) where.entity = filters.entity
-  if (filters?.adminUserId) where.adminUserId = filters.adminUserId
+  const where: any = {};
+
+  if (filters?.entity) where.entity = filters.entity;
+  if (filters?.adminUserId) where.adminUserId = filters.adminUserId;
   if (filters?.dateFrom || filters?.dateTo) {
-    where.createdAt = {}
-    if (filters.dateFrom) where.createdAt.gte = filters.dateFrom
-    if (filters.dateTo) where.createdAt.lte = filters.dateTo
+    where.createdAt = {};
+    if (filters.dateFrom) where.createdAt.gte = filters.dateFrom;
+    if (filters.dateTo) where.createdAt.lte = filters.dateTo;
   }
 
   const response = await db.auditLog.findMany({
@@ -1226,11 +1234,11 @@ export const getAuditLogs = async (filters?: {
         },
       },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     take: filters?.limit || 100,
-  })
-  return response
-}
+  });
+  return response;
+};
 
 // System Configuration
 export const getSystemConfig = async (key?: string) => {
@@ -1242,26 +1250,26 @@ export const getSystemConfig = async (key?: string) => {
           include: { User: true },
         },
       },
-    })
+    });
   }
-  
+
   return await db.systemConfig.findMany({
     include: {
       AdminUser: {
         include: { User: true },
       },
     },
-    orderBy: { key: 'asc' },
-  })
-}
+    orderBy: { key: "asc" },
+  });
+};
 
 export const updateSystemConfig = async (
   key: string,
   value: string,
   adminUserId: string,
-  type = 'string',
+  type = "string",
   description?: string,
-  isPublic = false
+  isPublic = false,
 ) => {
   const response = await db.systemConfig.upsert({
     where: { key },
@@ -1280,40 +1288,42 @@ export const updateSystemConfig = async (
       isPublic,
       lastModifiedBy: adminUserId,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 // Feature Flags
 export const getFeatureFlags = async () => {
   return await db.featureFlag.findMany({
-    orderBy: { name: 'asc' },
-  })
-}
+    orderBy: { name: "asc" },
+  });
+};
 
 export const updateFeatureFlag = async (
   id: string,
   data: {
-    isEnabled?: boolean
-    rolloutType?: string
-    rolloutData?: any
-  }
+    isEnabled?: boolean;
+    rolloutType?: string;
+    rolloutData?: any;
+  },
 ) => {
   const response = await db.featureFlag.update({
     where: { id },
     data: {
       ...data,
-      rolloutData: data.rolloutData ? JSON.stringify(data.rolloutData) : undefined,
+      rolloutData: data.rolloutData
+        ? JSON.stringify(data.rolloutData)
+        : undefined,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const createFeatureFlag = async (
   name: string,
   key: string,
   description?: string,
-  isEnabled = false
+  isEnabled = false,
 ) => {
   const response = await db.featureFlag.create({
     data: {
@@ -1322,9 +1332,9 @@ export const createFeatureFlag = async (
       description,
       isEnabled,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 // API Key Management
 export const createApiKey = async (
@@ -1332,11 +1342,11 @@ export const createApiKey = async (
   permissions: string[],
   agencyId?: string,
   subAccountId?: string,
-  expiresAt?: Date
+  expiresAt?: Date,
 ) => {
-  const keyValue = generateApiKey()
-  const keyHash = await hashApiKey(keyValue)
-  const keyPrefix = keyValue.substring(0, 8)
+  const keyValue = generateApiKey();
+  const keyHash = await hashApiKey(keyValue);
+  const keyPrefix = keyValue.substring(0, 8);
 
   const response = await db.apiKey.create({
     data: {
@@ -1348,15 +1358,15 @@ export const createApiKey = async (
       subAccountId,
       expiresAt,
     },
-  })
-  
-  return { ...response, keyValue } // Return the plain key only once
-}
+  });
+
+  return { ...response, keyValue }; // Return the plain key only once
+};
 
 export const getApiKeys = async (agencyId?: string, subAccountId?: string) => {
-  const where: any = { isActive: true }
-  if (agencyId) where.agencyId = agencyId
-  if (subAccountId) where.subAccountId = subAccountId
+  const where: any = { isActive: true };
+  if (agencyId) where.agencyId = agencyId;
+  if (subAccountId) where.subAccountId = subAccountId;
 
   return await db.apiKey.findMany({
     where,
@@ -1364,16 +1374,16 @@ export const getApiKeys = async (agencyId?: string, subAccountId?: string) => {
       Agency: true,
       SubAccount: true,
     },
-    orderBy: { createdAt: 'desc' },
-  })
-}
+    orderBy: { createdAt: "desc" },
+  });
+};
 
 export const revokeApiKey = async (keyId: string) => {
   return await db.apiKey.update({
     where: { id: keyId },
     data: { isActive: false },
-  })
-}
+  });
+};
 
 // Usage Metrics
 export const recordUsageMetric = async (
@@ -1382,7 +1392,7 @@ export const recordUsageMetric = async (
   unit: string,
   agencyId?: string,
   subAccountId?: string,
-  metadata?: any
+  metadata?: any,
 ) => {
   const response = await db.usageMetric.create({
     data: {
@@ -1393,26 +1403,26 @@ export const recordUsageMetric = async (
       subAccountId,
       metadata: metadata ? JSON.stringify(metadata) : null,
     },
-  })
-  return response
-}
+  });
+  return response;
+};
 
 export const getUsageMetrics = async (
   metricType?: string,
   agencyId?: string,
   subAccountId?: string,
   dateFrom?: Date,
-  dateTo?: Date
+  dateTo?: Date,
 ) => {
-  const where: any = {}
-  
-  if (metricType) where.metricType = metricType
-  if (agencyId) where.agencyId = agencyId
-  if (subAccountId) where.subAccountId = subAccountId
+  const where: any = {};
+
+  if (metricType) where.metricType = metricType;
+  if (agencyId) where.agencyId = agencyId;
+  if (subAccountId) where.subAccountId = subAccountId;
   if (dateFrom || dateTo) {
-    where.date = {}
-    if (dateFrom) where.date.gte = dateFrom
-    if (dateTo) where.date.lte = dateTo
+    where.date = {};
+    if (dateFrom) where.date.gte = dateFrom;
+    if (dateTo) where.date.lte = dateTo;
   }
 
   return await db.usageMetric.findMany({
@@ -1421,29 +1431,29 @@ export const getUsageMetrics = async (
       Agency: true,
       SubAccount: true,
     },
-    orderBy: { date: 'desc' },
-  })
-}
+    orderBy: { date: "desc" },
+  });
+};
 
 // Platform Analytics
 export const updatePlatformAnalytics = async (data: {
-  totalUsers?: number
-  totalAgencies?: number
-  totalSubAccounts?: number
-  totalRevenue?: number
-  activeUsers?: number
-  apiCalls?: number
-  storageUsed?: bigint
-  bandwidth?: bigint
-  metadata?: any
+  totalUsers?: number;
+  totalAgencies?: number;
+  totalSubAccounts?: number;
+  totalRevenue?: number;
+  activeUsers?: number;
+  apiCalls?: number;
+  storageUsed?: bigint;
+  bandwidth?: bigint;
+  metadata?: any;
 }) => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   // Find existing record for today
   const existing = await db.platformAnalytics.findFirst({
-    where: { date: today }
-  })
+    where: { date: today },
+  });
 
   if (existing) {
     return await db.platformAnalytics.update({
@@ -1451,51 +1461,51 @@ export const updatePlatformAnalytics = async (data: {
       data: {
         ...data,
         metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
-      }
-    })
+      },
+    });
   } else {
     return await db.platformAnalytics.create({
       data: {
         date: today,
         ...data,
         metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
-      }
-    })
+      },
+    });
   }
-}
+};
 
 export const getPlatformAnalytics = async (dateFrom?: Date, dateTo?: Date) => {
-  const where: any = {}
-  
+  const where: any = {};
+
   if (dateFrom || dateTo) {
-    where.date = {}
-    if (dateFrom) where.date.gte = dateFrom
-    if (dateTo) where.date.lte = dateTo
+    where.date = {};
+    if (dateFrom) where.date.gte = dateFrom;
+    if (dateTo) where.date.lte = dateTo;
   }
 
   return await db.platformAnalytics.findMany({
     where,
-    orderBy: { date: 'desc' },
-  })
-}
+    orderBy: { date: "desc" },
+  });
+};
 
 // Admin User Management
 export const getAllUsers = async (filters?: {
-  role?: Role
-  isActive?: boolean
-  agencyId?: string
-  search?: string
+  role?: Role;
+  isActive?: boolean;
+  agencyId?: string;
+  search?: string;
 }) => {
-  const where: any = {}
-  
-  if (filters?.role) where.role = filters.role
-  if (filters?.isActive !== undefined) where.isActive = filters.isActive
-  if (filters?.agencyId) where.agencyId = filters.agencyId
+  const where: any = {};
+
+  if (filters?.role) where.role = filters.role;
+  if (filters?.isActive !== undefined) where.isActive = filters.isActive;
+  if (filters?.agencyId) where.agencyId = filters.agencyId;
   if (filters?.search) {
     where.OR = [
       { name: { contains: filters.search } },
       { email: { contains: filters.search } },
-    ]
+    ];
   }
 
   return await db.user.findMany({
@@ -1509,22 +1519,22 @@ export const getAllUsers = async (filters?: {
       },
       AdminUser: true,
     },
-    orderBy: { createdAt: 'desc' },
-  })
-}
+    orderBy: { createdAt: "desc" },
+  });
+};
 
 export const getAllAgencies = async (filters?: {
-  isActive?: boolean
-  search?: string
+  isActive?: boolean;
+  search?: string;
 }) => {
-  const where: any = {}
-  
-  if (filters?.isActive !== undefined) where.isActive = filters.isActive
+  const where: any = {};
+
+  if (filters?.isActive !== undefined) where.isActive = filters.isActive;
   if (filters?.search) {
     where.OR = [
       { name: { contains: filters.search } },
       { companyEmail: { contains: filters.search } },
-    ]
+    ];
   }
 
   return await db.agency.findMany({
@@ -1540,69 +1550,69 @@ export const getAllAgencies = async (filters?: {
         },
       },
     },
-    orderBy: { createdAt: 'desc' },
-  })
-}
+    orderBy: { createdAt: "desc" },
+  });
+};
 
 export const suspendUser = async (userId: string, adminUserId: string) => {
-  const oldUser = await db.user.findUnique({ where: { id: userId } })
-  
+  const oldUser = await db.user.findUnique({ where: { id: userId } });
+
   const response = await db.user.update({
     where: { id: userId },
     data: { isActive: false },
-  })
+  });
 
   await createAuditLog(
     adminUserId,
-    'SUSPEND_USER',
-    'User',
+    "SUSPEND_USER",
+    "User",
     userId,
     { isActive: oldUser?.isActive },
-    { isActive: false }
-  )
+    { isActive: false },
+  );
 
-  return response
-}
+  return response;
+};
 
 export const activateUser = async (userId: string, adminUserId: string) => {
-  const oldUser = await db.user.findUnique({ where: { id: userId } })
-  
+  const oldUser = await db.user.findUnique({ where: { id: userId } });
+
   const response = await db.user.update({
     where: { id: userId },
     data: { isActive: true },
-  })
+  });
 
   await createAuditLog(
     adminUserId,
-    'ACTIVATE_USER',
-    'User',
+    "ACTIVATE_USER",
+    "User",
     userId,
     { isActive: oldUser?.isActive },
-    { isActive: true }
-  )
+    { isActive: true },
+  );
 
-  return response
-}
+  return response;
+};
 
 export const suspendAgency = async (agencyId: string, adminUserId: string) => {
-  const oldAgency = await db.agency.findUnique({ where: { id: agencyId } })
-  
+  const oldAgency = await db.agency.findUnique({ where: { id: agencyId } });
+
   const response = await db.agency.update({
     where: { id: agencyId },
     data: { isActive: false },
-  })
+  });
 
   await createAuditLog(
     adminUserId,
-    'SUSPEND_AGENCY',
-    'Agency',
+    "SUSPEND_AGENCY",
+    "Agency",
     agencyId,
     { isActive: oldAgency?.isActive },
-    { isActive: false }
-  )
+    { isActive: false },
+  );
 
-  return response
-}
+  return response;
+};
 
 // Support Tickets
 export const createSupportTicket = async (
@@ -1611,8 +1621,8 @@ export const createSupportTicket = async (
   userId: string,
   agencyId?: string,
   subAccountId?: string,
-  priority = 'medium',
-  category = 'general'
+  priority = "medium",
+  category = "general",
 ) => {
   return await db.supportTicket.create({
     data: {
@@ -1629,25 +1639,25 @@ export const createSupportTicket = async (
       Agency: true,
       SubAccount: true,
     },
-  })
-}
+  });
+};
 
 export const getSupportTickets = async (filters?: {
-  status?: string
-  priority?: string
-  category?: string
-  assignedTo?: string
-  userId?: string
-  agencyId?: string
+  status?: string;
+  priority?: string;
+  category?: string;
+  assignedTo?: string;
+  userId?: string;
+  agencyId?: string;
 }) => {
-  const where: any = {}
-  
-  if (filters?.status) where.status = filters.status
-  if (filters?.priority) where.priority = filters.priority
-  if (filters?.category) where.category = filters.category
-  if (filters?.assignedTo) where.assignedTo = filters.assignedTo
-  if (filters?.userId) where.userId = filters.userId
-  if (filters?.agencyId) where.agencyId = filters.agencyId
+  const where: any = {};
+
+  if (filters?.status) where.status = filters.status;
+  if (filters?.priority) where.priority = filters.priority;
+  if (filters?.category) where.category = filters.category;
+  if (filters?.assignedTo) where.assignedTo = filters.assignedTo;
+  if (filters?.userId) where.userId = filters.userId;
+  if (filters?.agencyId) where.agencyId = filters.agencyId;
 
   return await db.supportTicket.findMany({
     where,
@@ -1657,18 +1667,18 @@ export const getSupportTickets = async (filters?: {
       SubAccount: true,
       AssignedUser: true,
     },
-    orderBy: { createdAt: 'desc' },
-  })
-}
+    orderBy: { createdAt: "desc" },
+  });
+};
 
 export const updateSupportTicket = async (
   ticketId: string,
   data: {
-    status?: string
-    priority?: string
-    assignedTo?: string
-    resolution?: string
-  }
+    status?: string;
+    priority?: string;
+    assignedTo?: string;
+    resolution?: string;
+  },
 ) => {
   return await db.supportTicket.update({
     where: { id: ticketId },
@@ -1679,19 +1689,19 @@ export const updateSupportTicket = async (
       SubAccount: true,
       AssignedUser: true,
     },
-  })
-}
+  });
+};
 
 // Announcements
 export const createAnnouncement = async (
   title: string,
   content: string,
-  type = 'info',
-  priority = 'normal',
-  targetType = 'all',
+  type = "info",
+  priority = "normal",
+  targetType = "all",
   targetIds?: string[],
   publishAt?: Date,
-  expiresAt?: Date
+  expiresAt?: Date,
 ) => {
   return await db.announcement.create({
     data: {
@@ -1705,38 +1715,32 @@ export const createAnnouncement = async (
       expiresAt,
       isPublished: publishAt ? publishAt <= new Date() : true,
     },
-  })
-}
+  });
+};
 
 export const getAnnouncements = async (
   targetType?: string,
-  targetId?: string
+  targetId?: string,
 ) => {
   const where: any = {
     isPublished: true,
-    OR: [
-      { expiresAt: null },
-      { expiresAt: { gt: new Date() } },
-    ],
-  }
+    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+  };
 
   if (targetType && targetId) {
     where.OR = [
-      { targetType: 'all' },
+      { targetType: "all" },
       {
-        AND: [
-          { targetType },
-          { targetIds: { contains: targetId } },
-        ],
+        AND: [{ targetType }, { targetIds: { contains: targetId } }],
       },
-    ]
+    ];
   }
 
   return await db.announcement.findMany({
     where,
-    orderBy: { createdAt: 'desc' },
-  })
-}
+    orderBy: { createdAt: "desc" },
+  });
+};
 
 // Backup Management
 export const createBackupJob = async (
@@ -1744,7 +1748,7 @@ export const createBackupJob = async (
   type: string,
   targetType: string,
   targetIds?: string[],
-  scheduledAt?: Date
+  scheduledAt?: Date,
 ) => {
   return await db.backupJob.create({
     data: {
@@ -1754,49 +1758,50 @@ export const createBackupJob = async (
       targetIds: targetIds ? JSON.stringify(targetIds) : null,
       scheduledAt,
     },
-  })
-}
+  });
+};
 
 export const getBackupJobs = async (status?: string) => {
-  const where: any = {}
-  if (status) where.status = status
+  const where: any = {};
+  if (status) where.status = status;
 
   return await db.backupJob.findMany({
     where,
-    orderBy: { createdAt: 'desc' },
-  })
-}
+    orderBy: { createdAt: "desc" },
+  });
+};
 
 export const updateBackupJob = async (
   jobId: string,
   data: {
-    status?: string
-    progress?: number
-    size?: bigint
-    location?: string
-    errorLog?: string
-    startedAt?: Date
-    completedAt?: Date
-  }
+    status?: string;
+    progress?: number;
+    size?: bigint;
+    location?: string;
+    errorLog?: string;
+    startedAt?: Date;
+    completedAt?: Date;
+  },
 ) => {
   return await db.backupJob.update({
     where: { id: jobId },
     data,
-  })
-}
+  });
+};
 
 // Helper functions for API keys
 function generateApiKey(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let result = 'sk_'
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "sk_";
   for (let i = 0; i < 48; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return result
+  return result;
 }
 
 async function hashApiKey(key: string): Promise<string> {
   // In a real implementation, use bcrypt or similar
-  const crypto = require('crypto')
-  return crypto.createHash('sha256').update(key).digest('hex')
+  const crypto = require("crypto");
+  return crypto.createHash("sha256").update(key).digest("hex");
 }
