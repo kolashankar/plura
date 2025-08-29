@@ -1,93 +1,61 @@
 import { db } from '@/lib/db'
 import { stripe } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { currentUser } from '@clerk/nextjs'
 
-export async function POST(req: Request) {
-  const {
-    subAccountConnectAccId,
-    prices,
-    subaccountId,
-  }: {
-    subAccountConnectAccId: string
-    prices: { recurring: boolean; productId: string }[]
-    subaccountId: string
-  } = await req.json()
+export async function POST(req: NextRequest) {
+  const requestData = await req.json()
+  const user = await currentUser()
 
-  const origin = req.headers.get('origin')
-  if (!subAccountConnectAccId || !prices.length)
-    return new NextResponse('Stripe Account Id or price id is missing', {
-      status: 400,
-    })
-  if (
-    !process.env.NEXT_PUBLIC_PLATFORM_SUBSCRIPTION_PERCENT ||
-    !process.env.NEXT_PUBLIC_PLATFORM_ONETIME_FEE ||
-    !process.env.NEXT_PUBLIC_PLATFORM_AGENY_PERCENT
-  ) {
-    console.log('VALUES DONT EXITS')
-    return NextResponse.json({ error: 'Fees do not exist' })
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Not needed unless we want to send payments to this account.
-  //CHALLENGE Transfer money to a connected
-  // const agencyIdConnectedAccountId = await db.subAccount.findUnique({
-  //   where: { id: subaccountId },
-  //   include: { Agency: true },
-  // })
-
-  const subscriptionPriceExists = prices.find((price) => price.recurring)
-  // if (!agencyIdConnectedAccountId?.Agency.connectAccountId) {
-  //   console.log('Agency is not connected')
-  //   return NextResponse.json({ error: 'Agency account is not connected' })
-  // }
-
-  try {
-    const session = await stripe.checkout.sessions.create(
-      {
-        line_items: prices.map((price) => ({
-          price: price.productId,
-          quantity: 1,
-        })),
-
-        ...(subscriptionPriceExists && {
-          subscription_data: {
-            metadata: { connectAccountSubscriptions: 'true' },
-            application_fee_percent:
-              +process.env.NEXT_PUBLIC_PLATFORM_SUBSCRIPTION_PERCENT,
+  // Handle theme purchases
+  if (requestData.themeId) {
+    try {
+      const session = await stripe.checkout.sessions.create({
+        customer_email: user.emailAddresses[0]?.emailAddress,
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: requestData.themeName,
+                description: 'Premium theme download',
+                metadata: {
+                  type: 'theme',
+                  themeId: requestData.themeId
+                }
+              },
+              unit_amount: requestData.amount, // Amount in cents
+            },
+            quantity: 1,
           },
-        }),
+        ],
+        mode: 'payment',
+        success_url: requestData.successUrl,
+        cancel_url: requestData.cancelUrl,
+        metadata: {
+          type: 'theme_purchase',
+          themeId: requestData.themeId,
+          userId: user.id
+        }
+      })
 
-        ...(!subscriptionPriceExists && {
-          payment_intent_data: {
-            metadata: { connectAccountPayments: 'true' },
-            application_fee_amount:
-              +process.env.NEXT_PUBLIC_PLATFORM_ONETIME_FEE * 100,
-          },
-        }),
-
-        mode: subscriptionPriceExists ? 'subscription' : 'payment',
-        ui_mode: 'embedded',
-        redirect_on_completion: 'never',
-      },
-      { stripeAccount: subAccountConnectAccId }
-    )
-
-    return NextResponse.json(
-      {
-        clientSecret: session.client_secret,
-      },
-      {
-        headers: {
-          'Access-Control-Allow-Origin': origin || '*',
-          'Access-Control-Allow-Methods': 'GET,OPTIONS,PATCH,DELETE,POST,PUT',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        },
-      }
-    )
-  } catch (error) {
-    console.log('🔴 Error', error)
-    //@ts-ignore
-    return NextResponse.json({ error: error.message })
+      return NextResponse.json({ url: session.url })
+    } catch (error) {
+      console.error('Stripe session creation error:', error)
+      return NextResponse.json(
+        { error: 'Failed to create checkout session' },
+        { status: 500 }
+      )
+    }
   }
+
+  // Handle subscription purchases
+  const { priceId } = requestData
 }
 
 export async function OPTIONS(request: Request) {

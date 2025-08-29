@@ -1,9 +1,25 @@
+
+
+
 import { authMiddleware } from "@clerk/nextjs";
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export default authMiddleware({
-  publicRoutes: ["/site", "/api/uploadthing"],
-  beforeAuth: (req: NextRequest) => {
+  publicRoutes: [
+    "/",
+    "/site",
+    "/site/(.*)",
+    "/api/uploadthing",
+    "/api/stripe/webhook", 
+    "/marketplace",
+    "/marketplace/(.*)",
+    "/api/marketplace/(.*)"
+  ],
+  ignoredRoutes: [
+    "/api/uploadthing",
+    "/api/stripe/webhook"
+  ],
+  beforeAuth: (req) => {
     // Custom middleware logic
     const url = req.nextUrl;
     const searchParams = url.searchParams.toString();
@@ -48,3 +64,4 @@ export default authMiddleware({
 export const config = {
   matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
 };
+
