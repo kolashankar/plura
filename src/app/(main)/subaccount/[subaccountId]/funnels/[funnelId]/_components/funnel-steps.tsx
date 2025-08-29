@@ -9,7 +9,7 @@ import { upsertFunnelPage } from '@/lib/queries'
 import { FunnelsForSubAccount } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
 import { FunnelPage } from '@prisma/client'
-import { Check, ExternalLink, LucideEdit } from 'lucide-react'
+import { Check, ExternalLink, LucideEdit, UserCog, Wand2 } from 'lucide-react'
 import React, { useState } from 'react'
 
 import {
@@ -27,6 +27,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import FunnelStepCard from './funnel-step-card'
 
 type Props = {
@@ -42,6 +45,8 @@ const FunnelSteps = ({ funnel, funnelId, pages, subaccountId }: Props) => {
   )
   const { setOpen } = useModal()
   const [pagesState, setPagesState] = useState(pages)
+  const [funnelPrompt, setFunnelPrompt] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
   const onDragStart = (event: DragStart) => {
     //current chosen page
     const { draggableId } = event
@@ -94,6 +99,66 @@ const FunnelSteps = ({ funnel, funnelId, pages, subaccountId }: Props) => {
       title: 'Success',
       description: 'Saved page order',
     })
+  }
+
+  const generateFunnelPages = async () => {
+    if (!funnelPrompt.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please enter a prompt for funnel generation',
+      })
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      const response = await fetch('/api/ai/generate-funnel-pages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: funnelPrompt,
+          funnelId,
+          subaccountId,
+          existingPages: pagesState,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate funnel pages')
+      }
+
+      const data = await response.json()
+      
+      if (data.pages && Array.isArray(data.pages)) {
+        // Add the new generated pages to the state
+        const newPages = [...pagesState, ...data.pages]
+        setPagesState(newPages)
+        
+        // Set the first generated page as clicked if no page was selected
+        if (!clickedPage && data.pages.length > 0) {
+          setClickedPage(data.pages[0])
+        }
+
+        toast({
+          title: 'Success',
+          description: `Generated ${data.pages.length} funnel pages successfully!`,
+        })
+      }
+      
+      setFunnelPrompt('')
+    } catch (error) {
+      console.error('Error generating funnel pages:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to generate funnel pages',
+      })
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (

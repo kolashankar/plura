@@ -460,7 +460,7 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
           {
             name: 'Marketplace',
             icon: 'store',
-            link: `/subaccount/${subAccount.id}/marketplace`,
+            link: `/marketplace`,
           },
           {
             name: 'My Themes',

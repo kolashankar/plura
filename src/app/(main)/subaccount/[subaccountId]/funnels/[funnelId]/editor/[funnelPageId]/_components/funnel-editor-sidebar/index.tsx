@@ -16,6 +16,7 @@ import TabList from './tabs'
 import SettingsTab from './tabs/settings-tab'
 import MediaBucketTab from './tabs/media-bucket-tab'
 import ComponentsTab from './tabs/components-tab'
+import AgentTab from './tabs/agent-tab'
 
 type Props = {
   subaccountId: string
@@ -73,6 +74,27 @@ const FunnelEditorSidebar = ({ subaccountId }: Props) => {
                 </SheetDescription>
               </SheetHeader>
               <ComponentsTab subaccountId={subaccountId} />
+            </TabsContent>
+            <TabsContent value="Layers">
+              <SheetHeader className="text-left p-6">
+                <SheetTitle>Layers</SheetTitle>
+                <SheetDescription>
+                  View and manage your page elements in a hierarchical structure
+                </SheetDescription>
+              </SheetHeader>
+              {/* Layers content would go here */}
+              <div className="p-6 text-center text-muted-foreground">
+                <p>Layers functionality coming soon...</p>
+              </div>
+            </TabsContent>
+            <TabsContent value="Agent">
+              <SheetHeader className="text-left p-6">
+                <SheetTitle>AI Agent</SheetTitle>
+                <SheetDescription>
+                  Generate components and pages using AI to speed up your design process
+                </SheetDescription>
+              </SheetHeader>
+              <AgentTab subaccountId={subaccountId} />
             </TabsContent>
           </div>
         </SheetContent>

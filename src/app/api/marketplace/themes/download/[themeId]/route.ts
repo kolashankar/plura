@@ -41,11 +41,11 @@ export async function POST(
     
     if (purchaseId) {
       // Check purchase record in database
-      const purchase = await db.purchase.findFirst({
+      const purchase = await db.purchasedTheme.findFirst({
         where: {
           id: purchaseId,
           userId: user.id,
-          itemId: params.themeId
+          themeId: params.themeId
         }
       })
       isValidPurchase = !!purchase
@@ -54,13 +54,6 @@ export async function POST(
     if (!isValidPurchase) {
       return NextResponse.json(
         { error: 'Purchase not verified' },
-        { status: 400 }
-      )
-    }
-
-    if (session.payment_status !== 'paid') {
-      return NextResponse.json(
-        { error: 'Payment not confirmed' },
         { status: 400 }
       )
     }
@@ -201,21 +194,4 @@ console.log('${theme.name} theme loaded successfully');
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Theme initialized');
 });`
-}
-
-    // For now, return a mock response
-    return new NextResponse("Theme download would be provided here", {
-      headers: {
-        'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="${theme.name}.zip"`
-      }
-    })
-
-  } catch (error) {
-    console.error('Error downloading theme:', error)
-    return NextResponse.json(
-      { error: 'Failed to download theme' },
-      { status: 500 }
-    )
-  }
 }

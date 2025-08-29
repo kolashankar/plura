@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { Download, Eye, Calendar, Filter, Search } from 'lucide-react'
+import { Download, Eye, Calendar, Filter, Search, Import } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -92,6 +92,93 @@ const PurchasedThemesGrid: React.FC<PurchasedThemesGridProps> = ({
     }
 
     setFilteredThemes(filtered)
+  }
+
+  const handleDownload = async (themeId: string, purchaseId: string) => {
+    try {
+      toast.loading('Preparing download...')
+      
+      const response = await fetch(`/api/marketplace/themes/download/${themeId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          purchaseId: purchaseId
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Download failed')
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob()
+      
+      // Get theme name for filename (find theme in themes array)
+      const theme = themes.find(t => t.themeId === themeId)
+      const filename = theme ? `${theme.theme.name.replace(/\s+/g, '-').toLowerCase()}-theme.zip` : `theme-${themeId}.zip`
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast.dismiss()
+      toast.success('Theme downloaded successfully!')
+    } catch (error) {
+      toast.dismiss()
+      console.error('Download failed:', error)
+      toast.error(error instanceof Error ? error.message : 'Download failed')
+    }
+  }
+
+  const handleImportToFunnel = async (themeId: string) => {
+    if (!subAccountId) {
+      toast.error('Subaccount ID is required for import')
+      return
+    }
+
+    try {
+      toast.loading('Creating new funnel from theme...')
+      
+      const response = await fetch('/api/marketplace/import-theme', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          themeId: themeId,
+          subAccountId: subAccountId
+        }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        toast.dismiss()
+        toast.success(result.message || 'Theme imported successfully as new funnel!')
+        
+        // Redirect to the new funnel in the editor
+        if (result.funnel?.id) {
+          window.location.href = `/subaccount/${subAccountId}/funnels/${result.funnel.id}`
+        }
+      } else {
+        toast.dismiss()
+        toast.error(result.error || 'Failed to import theme')
+      }
+    } catch (error) {
+      toast.dismiss()
+      console.error('Import failed:', error)
+      toast.error('Failed to import theme')
+    }
   }
 
   if (isLoading) {
@@ -197,21 +284,36 @@ const PurchasedThemesGrid: React.FC<PurchasedThemesGridProps> = ({
               
               <CardContent className="pt-0">
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleDownload(purchasedTheme.themeId, purchasedTheme.id)}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Download
                   </Button>
                   
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Eye className="w-4 h-4 mr-2" />
-                    Preview
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    asChild
+                  >
+                    <Link href={`/marketplace/themes/${purchasedTheme.themeId}/preview`}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Preview
+                    </Link>
                   </Button>
                   
                   {showImportButton && subAccountId && (
-                    <Button asChild size="sm" className="flex-1">
-                      <Link href={`/subaccount/${subAccountId}/marketplace/import?theme=${purchasedTheme.themeId}`}>
-                        Import
-                      </Link>
+                    <Button 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleImportToFunnel(purchasedTheme.themeId)}
+                    >
+                      <Import className="w-4 h-4 mr-2" />
+                      Import to Funnel
                     </Button>
                   )}
                 </div>
