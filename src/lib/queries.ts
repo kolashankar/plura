@@ -52,6 +52,41 @@ export const getAuthUserDetails = async () => {
   return userData;
 };
 
+export const checkPremiumSubscription = async (agencyId: string) => {
+  try {
+    const agencySubscription = await db.agency.findUnique({
+      where: { id: agencyId },
+      select: {
+        Subscription: {
+          select: {
+            active: true,
+            priceId: true,
+            plan: true,
+          },
+        },
+      },
+    });
+
+    if (!agencySubscription?.Subscription?.active) {
+      return false;
+    }
+
+    // Get the priceId from subscription
+    const priceId = agencySubscription.Subscription.priceId;
+    
+    // Check if it's a premium plan (Basic or Unlimited SaaS)
+    const premiumPriceIds = [
+      'price_1OzWu5SCZtpG0Bi9Vn0PF4Q5', // Basic
+      'price_1OzWu4SCZtpG0Bi9uaOLW13b', // Unlimited SaaS
+    ];
+
+    return premiumPriceIds.includes(priceId);
+  } catch (error) {
+    console.error('Error checking premium subscription:', error);
+    return false;
+  }
+};
+
 export const saveActivityLogsNotification = async ({
   agencyId,
   description,
@@ -811,7 +846,14 @@ export const upsertContact = async (
 export const getFunnels = async (subacountId: string) => {
   const funnels = await db.funnel.findMany({
     where: { subAccountId: subacountId },
-    include: { FunnelPages: true },
+    include: { 
+      FunnelPages: true,
+      SubAccount: {
+        select: {
+          agencyId: true,
+        },
+      },
+    },
   });
 
   return funnels;

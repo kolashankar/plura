@@ -1,130 +1,3 @@
-
-import React from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
-
-const AboutPage = () => {
-  const features = [
-    {
-      title: "Drag & Drop Builder",
-      description: "Intuitive visual website builder with professional templates"
-    },
-    {
-      title: "Advanced Automations", 
-      description: "Powerful workflow engine with 500+ integrations"
-    },
-    {
-      title: "Multi-tenant Architecture",
-      description: "Agency and sub-account management system"
-    },
-    {
-      title: "E-commerce Ready",
-      description: "Built-in payment processing and product management"
-    },
-    {
-      title: "AI-Powered",
-      description: "Intelligent content generation and optimization"
-    },
-    {
-      title: "White-label Solution",
-      description: "Fully customizable and rebrandable platform"
-    }
-  ]
-
-  const stats = [
-    { label: "Active Users", value: "50,000+" },
-    { label: "Websites Created", value: "200,000+" },
-    { label: "Automations Run", value: "10M+" },
-    { label: "Integrations", value: "500+" }
-  ]
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Hero Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <Badge variant="outline" className="mb-4">About Plura</Badge>
-          <h1 className="text-5xl font-bold text-white mb-6">
-            The All-in-One Platform for 
-            <span className="text-purple-400"> Digital Agencies</span>
-          </h1>
-          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Plura empowers agencies to build, automate, and scale their digital operations with cutting-edge tools and seamless integrations.
-          </p>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <Card key={index} className="bg-black/20 border-purple-500/20">
-                <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-purple-400 mb-2">{stat.value}</div>
-                  <div className="text-gray-300">{stat.label}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl font-bold text-white text-center mb-12">Platform Features</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="bg-black/20 border-purple-500/20 hover:border-purple-400/40 transition-colors">
-                <CardHeader>
-                  <CardTitle className="text-white">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-gray-300">{feature.description}</CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Mission Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-white mb-8">Our Mission</h2>
-          <div className="bg-black/20 border border-purple-500/20 rounded-lg p-8">
-            <p className="text-lg text-gray-300 leading-relaxed">
-              At Plura, we believe that every agency deserves access to enterprise-level tools without the enterprise complexity. 
-              Our mission is to democratize digital agency operations by providing an all-in-one platform that combines website building, 
-              automation, client management, and revenue generation into a single, powerful solution.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">Ready to Transform Your Agency?</h2>
-          <p className="text-xl text-gray-300 mb-8">Join thousands of agencies already scaling with Plura</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="bg-purple-600 hover:bg-purple-700">
-              <Link href="/agency/sign-up">Start Free Trial</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/site/features">Explore Features</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-    </div>
-  )
-}
-
-export default AboutPage
 import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -233,7 +106,7 @@ const AboutPage = () => {
             <span className="text-purple-400"> Intelligent Automation</span>
           </h1>
           <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            We're on a mission to transform how digital agencies build, automate, and scale their businesses through cutting-edge technology and intuitive design.
+            We&apos;re on a mission to transform how digital agencies build, automate, and scale their businesses through cutting-edge technology and intuitive design.
           </p>
           <div className="flex flex-wrap justify-center gap-8 mt-12">
             <div className="text-center">
@@ -287,7 +160,7 @@ const AboutPage = () => {
                   <TrendingUp className="w-5 h-5 text-purple-400 mt-1" />
                   <div>
                     <h4 className="font-semibold text-white">Growth</h4>
-                    <p className="text-gray-300 text-sm">We measure our success by our customers' growth and achievements</p>
+                    <p className="text-gray-300 text-sm">We measure our success by our customers&apos; growth and achievements</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

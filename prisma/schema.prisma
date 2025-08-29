@@ -66,6 +66,8 @@ model Agency {
   users            User[]
   SubAccount       SubAccount[]
   SidebarOption    AgencySidebarOption[]
+  PurchasedThemes  PurchasedTheme[]
+  PurchasedPlugins PurchasedPlugin[]
   Invitation       Invitation[]
   Notification     Notification[]
   Subscription     Subscription?
@@ -94,6 +96,8 @@ model SubAccount {
   agencyId         String
   Agency           Agency                    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   SidebarOption    SubAccountSidebarOption[]
+  PurchasedThemes  PurchasedTheme[]
+  PurchasedPlugins PurchasedPlugin[]
   Permissions      Permissions[]
   Funnels          Funnel[]
   Media            Media[]
@@ -746,6 +750,12 @@ enum Icon {
   category
   contact
   clipboardIcon
+  store
+  shopping
+  package
+  plugins
+  themes
+  dollarsign
 }
 
 enum TriggerTypes {
@@ -760,4 +770,101 @@ enum InvitationStatus {
   ACCEPTED
   REVOKED
   PENDING
+}
+
+model MarketplaceTheme {
+  id            String   @id @default(uuid())
+  name          String
+  description   String
+  price         Float
+  category      String
+  image         String?
+  previewUrl    String?
+  downloadUrl   String?
+  rating        Float    @default(0)
+  downloads     Int      @default(0)
+  featured      Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  authorId      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  purchases     PurchasedTheme[]
+  
+  @@index([category])
+  @@index([featured])
+  @@index([authorId])
+}
+
+model MarketplacePlugin {
+  id            String   @id @default(uuid())
+  name          String
+  description   String
+  price         Float
+  category      String
+  image         String?
+  downloadUrl   String?
+  rating        Float    @default(0)
+  downloads     Int      @default(0)
+  featured      Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  authorId      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  purchases     PurchasedPlugin[]
+  
+  @@index([category])
+  @@index([featured])
+  @@index([authorId])
+}
+
+model PurchasedTheme {
+  id           String          @id @default(uuid())
+  userId       String
+  themeId      String
+  agencyId     String?
+  subAccountId String?
+  purchaseDate DateTime        @default(now())
+  price        Float
+  status       PurchaseStatus  @default(ACTIVE)
+  
+  // Relations
+  theme        MarketplaceTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  agency       Agency?          @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  subAccount   SubAccount?      @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, themeId])
+  @@index([userId])
+  @@index([agencyId])
+  @@index([subAccountId])
+}
+
+model PurchasedPlugin {
+  id           String          @id @default(uuid())
+  userId       String
+  pluginId     String
+  agencyId     String?
+  subAccountId String?
+  purchaseDate DateTime        @default(now())
+  price        Float
+  status       PurchaseStatus  @default(ACTIVE)
+  
+  // Relations
+  plugin       MarketplacePlugin @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+  agency       Agency?           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  subAccount   SubAccount?       @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, pluginId])
+  @@index([userId])
+  @@index([agencyId])
+  @@index([subAccountId])
+}
+
+enum PurchaseStatus {
+  ACTIVE
+  REFUNDED
+  EXPIRED
 }

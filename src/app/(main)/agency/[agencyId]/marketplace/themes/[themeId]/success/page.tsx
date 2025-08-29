@@ -83,7 +83,7 @@ const ThemeSuccessPage = ({ params, searchParams }: Props) => {
             </div>
             <h1 className="text-3xl font-bold mb-2">Purchase Successful!</h1>
             <p className="text-muted-foreground">
-              You&apos;re all set! Your theme has been successfully
+              You&apos;re all set! Your theme has been successfully purchased.
             </p>
           </div>
 

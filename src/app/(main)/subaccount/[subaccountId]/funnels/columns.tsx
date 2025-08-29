@@ -4,6 +4,7 @@ import { FunnelsForSubAccount } from '@/lib/types'
 import { ColumnDef } from '@tanstack/react-table'
 import { ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import FunnelActions from '@/components/funnel/funnel-actions'
 
 export const columns: ColumnDef<FunnelsForSubAccount>[] = [
   {
@@ -39,6 +40,13 @@ export const columns: ColumnDef<FunnelsForSubAccount>[] = [
       ) : (
         <Badge variant={'secondary'}>Draft</Badge>
       )
+    },
+  },
+  {
+    accessorKey: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => {
+      return <FunnelActions funnel={row.original} />
     },
   },
 ]

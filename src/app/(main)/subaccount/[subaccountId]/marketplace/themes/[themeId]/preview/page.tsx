@@ -319,7 +319,7 @@ const ThemePreviewPage = ({ params }: Props) => {
                 </div>
 
                 <div className="pt-4 border-t">
-                  <h4 className="font-semibold mb-2">What&apos;s Included:</h4>
+                  <h4 className="font-semibold mb-2">What's Included:</h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     <li>• Complete theme files</li>
                     <li>• Installation guide</li>

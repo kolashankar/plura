@@ -3,6 +3,7 @@ import Calendar from '@/components/icons/calendar'
 import CheckCircle from '@/components/icons/check_circled'
 import Chip from '@/components/icons/chip'
 import ClipboardIcon from '@/components/icons/clipboardIcon'
+import { Store, ShoppingBag, Package, Puzzle, Palette, DollarSign } from 'lucide-react'
 import Compass from '@/components/icons/compass'
 import Database from '@/components/icons/database'
 import Flag from '@/components/icons/flag'
@@ -206,6 +207,36 @@ export const icons = [
     value: 'clipboardIcon',
     label: 'Clipboard Icon',
     path: ClipboardIcon,
+  },
+  {
+    value: 'store',
+    label: 'Store',
+    path: Store,
+  },
+  {
+    value: 'shopping',
+    label: 'Shopping',
+    path: ShoppingBag,
+  },
+  {
+    value: 'package',
+    label: 'Package',
+    path: Package,
+  },
+  {
+    value: 'plugins',
+    label: 'Plugins',
+    path: Puzzle,
+  },
+  {
+    value: 'themes',
+    label: 'Themes',
+    path: Palette,
+  },
+  {
+    value: 'dollarsign',
+    label: 'Dollar Sign',
+    path: DollarSign,
   },
 ]
 

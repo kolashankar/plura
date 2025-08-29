@@ -1,6 +1,3 @@
-
-
-
 import { authMiddleware } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
 
@@ -10,7 +7,7 @@ export default authMiddleware({
     "/site",
     "/site/(.*)",
     "/api/uploadthing",
-    "/api/stripe/webhook", 
+    "/api/stripe/webhook",
     "/marketplace",
     "/marketplace/(.*)",
     "/api/marketplace/(.*)"
@@ -64,4 +61,3 @@ export default authMiddleware({
 export const config = {
   matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
 };
-
