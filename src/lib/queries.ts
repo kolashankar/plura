@@ -25,31 +25,41 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 export const getAuthUserDetails = async () => {
-  const user = await currentUser();
-  if (!user) {
-    return;
-  }
+  try {
+    const user = await currentUser();
+    if (!user) {
+      return null;
+    }
 
-  const userData = await db.user.findUnique({
-    where: {
-      email: user.emailAddresses[0].emailAddress,
-    },
-    include: {
-      Agency: {
-        include: {
-          SidebarOption: true,
-          SubAccount: {
-            include: {
-              SidebarOption: true,
+    if (!user.emailAddresses || user.emailAddresses.length === 0) {
+      console.error('User has no email addresses');
+      return null;
+    }
+
+    const userData = await db.user.findUnique({
+      where: {
+        email: user.emailAddresses[0].emailAddress,
+      },
+      include: {
+        Agency: {
+          include: {
+            SidebarOption: true,
+            SubAccount: {
+              include: {
+                SidebarOption: true,
+              },
             },
           },
         },
+        Permissions: true,
       },
-      Permissions: true,
-    },
-  });
+    });
 
-  return userData;
+    return userData;
+  } catch (error) {
+    console.error('Error in getAuthUserDetails:', error);
+    return null;
+  }
 };
 
 export const checkPremiumSubscription = async (agencyId: string) => {
@@ -64,6 +74,7 @@ export const checkPremiumSubscription = async (agencyId: string) => {
             plan: true,
           },
         },
+        customerId: true,
       },
     });
 
@@ -74,13 +85,22 @@ export const checkPremiumSubscription = async (agencyId: string) => {
     // Get the priceId from subscription
     const priceId = agencySubscription.Subscription.priceId;
     
-    // Check if it's a premium plan (Basic or Unlimited SaaS)
+    // Check if it's a premium plan (Basic, Unlimited SaaS, or any paid plan)
     const premiumPriceIds = [
       'price_1OzWu5SCZtpG0Bi9Vn0PF4Q5', // Basic
       'price_1OzWu4SCZtpG0Bi9uaOLW13b', // Unlimited SaaS
     ];
 
-    return premiumPriceIds.includes(priceId);
+    // If user has a base premium plan, they have premium access
+    if (premiumPriceIds.includes(priceId)) {
+      return true;
+    }
+
+    // If user has any paid plan (not free), consider them premium for code export
+    // This handles Priority Support add-on and any other paid subscriptions
+    const freePriceIds = ['', null, undefined];
+    
+    return !freePriceIds.includes(priceId);
   } catch (error) {
     console.error('Error checking premium subscription:', error);
     return false;
@@ -319,6 +339,26 @@ export const upsertAgency = async (agency: Agency, price?: Plan) => {
               icon: "shield",
               link: `/agency/${agency.id}/team`,
             },
+            {
+              name: 'Marketplace',
+              icon: 'store',
+              link: `/agency/${agency.id}/marketplace`,
+            },
+            {
+              name: 'My Themes',
+              icon: 'themes',
+              link: `/agency/${agency.id}/marketplace/themes`,
+            },
+            {
+              name: 'My Plugins',
+              icon: 'plugins',
+              link: `/agency/${agency.id}/marketplace/plugins`,
+            },
+            {
+              name: 'Sell Dashboard',
+              icon: 'dollarsign',
+              link: `/agency/${agency.id}/marketplace/sell`,
+            },
           ],
         },
       },
@@ -416,6 +456,26 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
             name: "Dashboard",
             icon: "category",
             link: `/subaccount/${subAccount.id}`,
+          },
+          {
+            name: 'Marketplace',
+            icon: 'store',
+            link: `/subaccount/${subAccount.id}/marketplace`,
+          },
+          {
+            name: 'My Themes',
+            icon: 'themes',
+            link: `/subaccount/${subAccount.id}/marketplace/themes`,
+          },
+          {
+            name: 'My Plugins',
+            icon: 'plugins',
+            link: `/subaccount/${subAccount.id}/marketplace/plugins`,
+          },
+          {
+            name: 'Import to Funnel',
+            icon: 'package',
+            link: `/subaccount/${subAccount.id}/marketplace/import`,
           },
         ],
       },

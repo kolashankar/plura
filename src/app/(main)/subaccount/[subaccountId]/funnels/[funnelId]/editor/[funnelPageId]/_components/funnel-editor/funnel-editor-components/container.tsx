@@ -5,7 +5,7 @@ import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
 import clsx from 'clsx'
 import React from 'react'
 import { v4 } from 'uuid'
-import Recursive from './recursive'
+import RecursiveElement from './recursive'
 import { Trash } from 'lucide-react'
 
 type Props = { element: EditorElement }
@@ -223,7 +223,7 @@ const Container = ({ element }: Props) => {
 
       {Array.isArray(content) &&
         content.map((childElement) => (
-          <Recursive
+          <RecursiveElement
             key={childElement.id}
             element={childElement}
           />

@@ -12,7 +12,7 @@ const Sidebar = async ({ id, type }: Props) => {
   const user = await getAuthUserDetails()
   if (!user) return null
 
-  if (!user.Agency) return
+  if (!user.Agency) return null
 
   const details =
     type === 'agency'

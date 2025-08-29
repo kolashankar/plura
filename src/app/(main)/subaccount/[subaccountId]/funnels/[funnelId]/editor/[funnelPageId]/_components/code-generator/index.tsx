@@ -85,20 +85,42 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({
     }
   }
 
-  const downloadCode = () => {
+  const downloadCode = async () => {
     if (!generatedCode) return
     
-    const blob = new Blob([JSON.stringify(generatedCode, null, 2)], { 
-      type: 'application/json' 
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${platform}-project-${funnelPageId}.zip`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    try {
+      // Check premium subscription before allowing download
+      const response = await fetch('/api/check-premium', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subaccountId })
+      })
+      
+      const { isPremium } = await response.json()
+      
+      if (!isPremium) {
+        toast.error('Premium subscription required for code download. Please upgrade your plan to access this feature.')
+        return
+      }
+      
+      // Create and download the zip file
+      const blob = new Blob([JSON.stringify(generatedCode, null, 2)], { 
+        type: 'application/json' 
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${platform}-project-${funnelPageId}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      toast.success('Project downloaded successfully!')
+    } catch (error) {
+      console.error('Download failed:', error)
+      toast.error('Failed to download project. Please try again.')
+    }
   }
 
   return (

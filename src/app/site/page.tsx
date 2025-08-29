@@ -70,58 +70,53 @@ export default async function Home() {
           ready to commit you can get started for free.
         </p>
         <div className="flex  justify-center gap-4 flex-wrap mt-6">
-          {prices.data.map((card) => (
-            //WIP: Wire up free product from stripe
+          {pricingCards.map((card) => (
             <Card
-              key={card.nickname}
+              key={card.title}
               className={clsx('w-[300px] flex flex-col justify-between', {
-                'border-2 border-primary': card.nickname === 'Unlimited Saas',
+                'border-2 border-primary': card.title === 'Unlimited Saas',
               })}
             >
               <CardHeader>
                 <CardTitle
                   className={clsx('', {
-                    'text-muted-foreground': card.nickname !== 'Unlimited Saas',
+                    'text-muted-foreground': card.title !== 'Unlimited Saas',
                   })}
                 >
-                  {card.nickname}
+                  {card.title}
                 </CardTitle>
                 <CardDescription>
-                  {
-                    pricingCards.find((c) => c.title === card.nickname)
-                      ?.description
-                  }
+                  {card.description}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <span className="text-4xl font-bold">
-                  {card.unit_amount && card.unit_amount / 100}
+                  {card.price}
                 </span>
                 <span className="text-muted-foreground">
-                  <span>/ {card.recurring?.interval}</span>
+                  {card.duration && <span>/ {card.duration}</span>}
                 </span>
               </CardContent>
               <CardFooter className="flex flex-col items-start gap-4">
                 <div>
-                  {pricingCards
-                    .find((c) => c.title === card.nickname)
-                    ?.features.map((feature) => (
-                      <div
-                        key={feature}
-                        className="flex gap-2"
-                      >
-                        <Check />
-                        <p>{feature}</p>
-                      </div>
-                    ))}
+                  <p className="font-medium text-sm mb-2">{card.highlight}</p>
+                  {card.features.map((feature) => (
+                    <div
+                      key={feature}
+                      className="flex gap-2 items-center mb-1"
+                    >
+                      <Check className="h-4 w-4 text-green-500" />
+                      <p className="text-sm">{feature}</p>
+                    </div>
+                  ))}
                 </div>
                 <Link
-                  href={`/agency?plan=${card.id}`}
+                  href={card.priceId ? `/agency?plan=${card.priceId}` : '/agency'}
                   className={clsx(
-                    'w-full text-center bg-primary p-2 rounded-md',
+                    'w-full text-center bg-primary p-2 rounded-md text-white hover:bg-primary/90 transition-colors',
                     {
-                      '!bg-muted-foreground':
-                        card.nickname !== 'Unlimited Saas',
+                      '!bg-muted-foreground hover:!bg-muted-foreground/90':
+                        card.title !== 'Unlimited Saas',
                     }
                   )}
                 >
@@ -130,45 +125,43 @@ export default async function Home() {
               </CardFooter>
             </Card>
           ))}
-          <Card className={clsx('w-[300px] flex flex-col justify-between')}>
+          {/* Add Priority Support as an add-on */}
+          <Card className={clsx('w-[300px] flex flex-col justify-between border-dashed')}>
             <CardHeader>
-              <CardTitle
-                className={clsx({
-                  'text-muted-foreground': true,
-                })}
-              >
-                {pricingCards[0].title}
+              <CardTitle className="text-muted-foreground">
+                Priority Support
               </CardTitle>
-              <CardDescription>{pricingCards[0].description}</CardDescription>
+              <CardDescription>
+                24/7 dedicated support for your agency
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <span className="text-4xl font-bold">$0</span>
-              <span>/ month</span>
+              <span className="text-4xl font-bold">Add-on</span>
+              <span className="text-muted-foreground">
+                <span>/ month</span>
+              </span>
             </CardContent>
-            <CardFooter className="flex flex-col  items-start gap-4 ">
+            <CardFooter className="flex flex-col items-start gap-4">
               <div>
-                {pricingCards
-                  .find((c) => c.title === 'Starter')
-                  ?.features.map((feature) => (
-                    <div
-                      key={feature}
-                      className="flex gap-2"
-                    >
-                      <Check />
-                      <p>{feature}</p>
-                    </div>
-                  ))}
+                <p className="font-medium text-sm mb-2">Additional Features</p>
+                <div className="flex gap-2 items-center mb-1">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">24/7 Priority Support</p>
+                </div>
+                <div className="flex gap-2 items-center mb-1">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">Dedicated Support Team</p>
+                </div>
+                <div className="flex gap-2 items-center mb-1">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <p className="text-sm">Skip Queue Support</p>
+                </div>
               </div>
               <Link
-                href="/agency"
-                className={clsx(
-                  'w-full text-center bg-primary p-2 rounded-md',
-                  {
-                    '!bg-muted-foreground': true,
-                  }
-                )}
+                href="/agency?addon=priority-support"
+                className="w-full text-center bg-muted-foreground p-2 rounded-md text-white hover:bg-muted-foreground/90 transition-colors"
               >
-                Get Started
+                Add to Plan
               </Link>
             </CardFooter>
           </Card>

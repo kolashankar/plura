@@ -162,13 +162,13 @@ const MarketplacePage = () => {
                       )}
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <Button size="sm" variant="outline" asChild>
-                          <Link href={`/marketplace/themes/${theme.id}/preview`}>
+                          <Link href={`/agency/${agencyId}/marketplace/themes/${theme.id}/preview`}>
                             <Eye className="w-4 h-4 mr-1" />
                             Preview
                           </Link>
                         </Button>
                         <Button size="sm" className="bg-purple-600 hover:bg-purple-700" asChild>
-                          <Link href={`/marketplace/themes/${theme.id}/purchase`}>
+                          <Link href={`/agency/${agencyId}/marketplace/themes/${theme.id}/purchase`}>
                             <ShoppingCart className="w-4 h-4 mr-1" />
                             Buy
                           </Link>
@@ -297,7 +297,7 @@ const MarketplacePage = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="bg-purple-600 hover:bg-purple-700">
-              <Link href="/marketplace/sell">Start Selling</Link>
+              <Link href={`/agency/${agencyId}/marketplace/sell`}>Start Selling</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link href="/site/documentation">Learn More</Link>

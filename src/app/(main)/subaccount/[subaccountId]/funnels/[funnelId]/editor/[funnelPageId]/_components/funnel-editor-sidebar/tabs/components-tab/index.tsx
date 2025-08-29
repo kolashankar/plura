@@ -72,6 +72,7 @@ import CodeGenerator from '@/app/(main)/subaccount/[subaccountId]/funnels/[funne
 import ComponentRequestForm from '@/components/forms/component-request-form'
 import CustomModal from '@/components/global/custom-modal'
 import { toast } from '@/components/ui/use-toast'
+import AIComponentGenerator from '@/components/ai-agent/ai-component-generator'
 
 type Props = {}
 
@@ -681,8 +682,21 @@ const ComponentsTab = ({ subaccountId }: { subaccountId: string }) => {
       <Accordion
         type="multiple"
         className="w-full"
-        defaultValue={['Layout', 'Elements']}
+        defaultValue={['AI Agent', 'Layout', 'Elements']}
       >
+        <AccordionItem
+          value="AI Agent"
+          className="px-6 py-0 border-y-[1px]"
+        >
+          <AccordionTrigger className="!no-underline">
+            <div className="flex items-center gap-2">
+              ✨ AI Component Generator
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="py-4">
+            <AIComponentGenerator subaccountId={subaccountId} />
+          </AccordionContent>
+        </AccordionItem>
         <AccordionItem
           value="Layout"
           className="px-6 py-0 border-y-[1px]"

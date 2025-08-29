@@ -78,6 +78,7 @@
     "uploadthing": "^6.1.0",
     "uuid": "^9.0.1",
     "vaul": "^0.8.0",
+    "webprodigies-plura": ".",
     "zod": "^3.22.4"
   },
   "devDependencies": {
