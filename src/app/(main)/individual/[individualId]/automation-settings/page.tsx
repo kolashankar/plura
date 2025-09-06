@@ -31,7 +31,7 @@ interface AutomationForm {
 
 export default function IndividualAutomationSettingsPage() {
   const params = useParams()
-  const individualId = params.IndividualId as string
+  const individualId = params.individualId as string
   
   const [forms, setForms] = useState<AutomationForm[]>([])
   const [loading, setLoading] = useState(true)

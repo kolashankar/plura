@@ -22,7 +22,7 @@ export default async function BillingPage({
 
   if (individual) {
     const upgradeParam = searchParams.upgrade ? `?plan=${searchParams.upgrade}` : ''
-    return redirect(`/Individual/${individual.id}/billing${upgradeParam}`)
+    return redirect(`/individual/${individual.id}/billing${upgradeParam}`)
   }
 
   // Try to find user in Agency

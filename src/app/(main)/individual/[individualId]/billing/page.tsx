@@ -16,7 +16,7 @@ import clsx from 'clsx'
 import SubscriptionHelper from './_components/subscription-helper'
 
 type Props = {
-  params: { IndividualId: string }
+  params: { individualId: string }
 }
 
 const page = async ({ params }: Props) => {
@@ -28,7 +28,7 @@ const page = async ({ params }: Props) => {
 
   const individualSubscription = await db.individual.findUnique({
     where: {
-      id: params.IndividualId,
+      id: params.individualId,
     },
     select: {
       customerId: true,

@@ -233,7 +233,7 @@ const RealTimeMetricsCard = ({ data }: any) => {
 }
 
 type Props = {
-  params: { IndividualId: string }
+  params: { individualId: string }
 }
 
 const AnalyticsPage = ({ params }: Props) => {
@@ -257,7 +257,7 @@ const AnalyticsPage = ({ params }: Props) => {
   const fetchAnalyticsData = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/individual/analytics?timeRange=${timeRange}&individualId=${params.IndividualId}`)
+      const response = await fetch(`/api/individual/analytics?timeRange=${timeRange}&individualId=${params.individualId}`)
       const data = await response.json()
       setAnalyticsData(data)
     } catch (error) {

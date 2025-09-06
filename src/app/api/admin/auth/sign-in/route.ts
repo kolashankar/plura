@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
       // Find or create the admin user in database
       let adminUser = await db.user.findUnique({
         where: { email },
+        include: { AdminUser: true }
       })
 
       if (!adminUser) {
@@ -30,6 +31,15 @@ export async function POST(req: NextRequest) {
             email: email,
             avatarUrl: '/assets/admin-avatar.png',
             role: 'AGENCY_ADMIN',
+            AdminUser: {
+              create: {
+                permissions: JSON.stringify(['all']),
+                isSuperAdmin: true
+              }
+            }
+          },
+          include: {
+            AdminUser: true
           }
         })
       } else {
@@ -38,6 +48,17 @@ export async function POST(req: NextRequest) {
           where: { id: adminUser.id },
           data: { lastLoginAt: new Date() }
         })
+        
+        // Ensure AdminUser record exists
+        if (!adminUser.AdminUser) {
+          await db.adminUser.create({
+            data: {
+              userId: adminUser.id,
+              permissions: JSON.stringify(['all']),
+              isSuperAdmin: true
+            }
+          })
+        }
       }
 
       // Create JWT token

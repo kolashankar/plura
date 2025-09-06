@@ -678,7 +678,7 @@ const SalesAnalytics = () => {
 }
 
 type Props = {
-  params: { IndividualId: string }
+  params: { individualId: string }
 }
 
 const EcommercePage = ({ params }: Props) => {

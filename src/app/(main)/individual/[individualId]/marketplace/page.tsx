@@ -14,12 +14,12 @@ import MarketplaceClient from './marketplace-client'
 
 interface MarketplacePageProps {
   params: {
-    IndividualId: string
+    individualId: string
   }
 }
 
 const MarketplacePage = async ({ params }: MarketplacePageProps) => {
-  const individualId = params.IndividualId
+  const individualId = params.individualId
 
   // For Individual accounts, we'll set premium based on their subscription
   let isPremium = false

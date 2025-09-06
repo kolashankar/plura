@@ -6,7 +6,7 @@ import { currentUser } from '@clerk/nextjs/server'
 import React from 'react'
 
 type Props = {
-  params: { IndividualId: string }
+  params: { individualId: string }
 }
 
 const IndividualSettingPage = async ({ params }: Props) => {
@@ -20,7 +20,7 @@ const IndividualSettingPage = async ({ params }: Props) => {
   if (!userDetails) return
 
   const individual = await db.individual.findUnique({
-    where: { id: params.IndividualId },
+    where: { id: params.individualId },
   })
   if (!individual) return
 
@@ -34,7 +34,7 @@ const IndividualSettingPage = async ({ params }: Props) => {
         />
         <UserDetails
           type="individual"
-          id={params.IndividualId}
+          id={params.individualId}
           userData={userDetails}
         />
       </div>

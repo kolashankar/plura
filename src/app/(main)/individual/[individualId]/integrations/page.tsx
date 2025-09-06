@@ -968,7 +968,7 @@ const Marketplace = () => {
 }
 
 type Props = {
-  params: { IndividualId: string }
+  params: { individualId: string }
 }
 
 const IntegrationsPage = ({ params }: Props) => {

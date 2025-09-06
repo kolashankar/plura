@@ -28,7 +28,7 @@ import Link from 'next/link'
 import React from 'react'
 
 type Props = {
-  params: { IndividualId: string }
+  params: { individualId: string }
   searchParams: {
     code: string
   }
@@ -45,7 +45,7 @@ const IndividualPageId = async ({ params, searchParams }: Props) => {
 
   const individualDetails = await db.individual.findUnique({
     where: {
-      id: params.IndividualId,
+      id: params.individualId,
     },
   })
 
@@ -106,7 +106,7 @@ const IndividualPageId = async ({ params, searchParams }: Props) => {
 
   const funnels = await db.funnel.findMany({
     where: {
-      individualId: params.IndividualId,
+      individualId: params.individualId,
     },
     include: {
       FunnelPages: true,
@@ -177,7 +177,7 @@ const IndividualPageId = async ({ params, searchParams }: Props) => {
               </CardContent>
               <Contact2 className="absolute right-4 top-4 text-muted-foreground" />
             </Card>
-            <PipelineValue subaccountId={params.IndividualId} />
+            <PipelineValue subaccountId={params.individualId} />
 
             <Card className="xl:w-fit">
               <CardHeader>

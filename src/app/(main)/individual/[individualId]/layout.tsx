@@ -13,7 +13,7 @@ import React from 'react'
 
 type Props = {
   children: React.ReactNode
-  params: { IndividualId: string }
+  params: { individualId: string }
 }
 
 const IndividualLayout = async ({ children, params }: Props) => {
@@ -37,7 +37,7 @@ const IndividualLayout = async ({ children, params }: Props) => {
   return (
     <div className="h-screen overflow-hidden">
       <Sidebar
-        id={params.IndividualId}
+        id={params.individualId}
         type="individual"
       />
 
@@ -45,7 +45,7 @@ const IndividualLayout = async ({ children, params }: Props) => {
         <InfoBar
           notifications={notifications}
           role={user.privateMetadata.role as Role}
-          subAccountId={params.IndividualId as string}
+          subAccountId={params.individualId as string}
         />
         <div className="relative">{children}</div>
       </div>

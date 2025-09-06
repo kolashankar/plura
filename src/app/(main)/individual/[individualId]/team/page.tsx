@@ -740,7 +740,7 @@ const MemberManagement = () => {
 }
 
 type Props = {
-  params: { IndividualId: string }
+  params: { individualId: string }
 }
 
 const TeamCollaborationPage = ({ params }: Props) => {
