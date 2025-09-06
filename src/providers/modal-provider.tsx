@@ -1,7 +1,15 @@
 'use client'
+
 import { PricesList, TicketDetails } from '@/lib/types'
 import { Agency, Contact, Plan, User } from '@prisma/client'
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import React, { 
+    createContext, 
+    useContext, 
+    useEffect, 
+    useState, 
+    useCallback, 
+    useMemo 
+} from 'react'
 
 interface ModalProviderProps {
   children: React.ReactNode
@@ -17,6 +25,7 @@ export type ModalData = {
     plans: PricesList['data']
   }
 }
+
 type ModalContextType = {
   data: ModalData
   isOpen: boolean
@@ -27,7 +36,7 @@ type ModalContextType = {
 export const ModalContext = createContext<ModalContextType>({
   data: {},
   isOpen: false,
-  setOpen: (modal: React.ReactNode, fetchData?: () => Promise<any>) => {},
+  setOpen: () => {},
   setClose: () => {},
 })
 
@@ -41,6 +50,9 @@ const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     setIsMounted(true)
   }, [])
 
+  // The 'setOpen' function is wrapped in useCallback.
+  // This ensures the function is not recreated on every render, preventing infinite loops.
+  // Using a functional update for `setData` (prevData => ...) removes the need to list `data` as a dependency.
   const setOpen = useCallback(async (
     modal: React.ReactNode,
     fetchData?: () => Promise<any>
@@ -55,18 +67,22 @@ const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     }
   }, [])
 
+  // The 'setClose' function is also wrapped in useCallback for stability.
   const setClose = useCallback(() => {
     setIsOpen(false)
     setData({})
-    setShowingModal(null)
+    setShowingModal(null) // Also clears the modal component
   }, [])
 
+  // useMemo memoizes the context value object.
+  // This is a performance optimization that prevents consumers of the context
+  // from re-rendering unnecessarily when the provider's parent re-renders.
   const contextValue = useMemo(() => ({
     data,
+    isOpen,
     setOpen,
     setClose,
-    isOpen
-  }), [data, setOpen, setClose, isOpen])
+  }), [data, isOpen, setOpen, setClose])
 
   if (!isMounted) return null
 
